@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>RaceSync F1 — Pantalla Maestra</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#05050f;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+    header{background:#0a0a18;border-bottom:3px solid #e10600;padding:8px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+    .brand h1{font-size:1.4rem;font-weight:900;letter-spacing:4px;color:#e10600}
+    .brand h1 span{color:#fff}
+    .brand .sub{font-size:.65rem;color:#444;letter-spacing:2px;margin-top:2px}
+    #vcBox{font-family:monospace;font-size:.72rem;color:#333;text-align:right}
+    #vcVal{color:#555;margin-top:2px}
+    .main{flex:1;display:grid;grid-template-columns:1fr 280px;min-height:0}
+    #trackPanel{background:#06060f;display:flex;align-items:center;justify-content:center}
+    canvas#track{display:block}
+    #sidebar{background:#0a0a1a;border-left:1px solid #111;display:flex;flex-direction:column;overflow:hidden}
+    #standings{flex:1;padding:12px;overflow:hidden}
+    #standings h2{font-size:.7rem;color:#555;letter-spacing:3px;margin-bottom:10px}
+    .stand-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;margin-bottom:5px;background:#0d0d20;border-left:3px solid #333}
+    .pos{font-size:1rem;font-weight:900;color:#f39c12;min-width:22px}
+    .car-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .car-info{flex:1;min-width:0}
+    .car-name{font-size:.82rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .car-detail{font-size:.65rem;color:#555;margin-top:1px}
+    .car-speed{font-size:.78rem;font-weight:bold;color:#e10600}
+    #nodePanel{padding:10px 12px;border-top:1px solid #111;flex-shrink:0}
+    #nodePanel h2{font-size:.7rem;color:#555;letter-spacing:3px;margin-bottom:8px}
+    .nrow{display:flex;gap:6px;margin-bottom:5px;align-items:center}
+    .ndot{width:8px;height:8px;border-radius:50%;background:#27ae60;transition:background .3s;flex-shrink:0}
+    .ndot.down{background:#e10600}
+    .ndot.leader{background:#f39c12}
+    .nlabel{font-size:.75rem;font-weight:bold;flex:1}
+    .nbadge{font-size:.55rem;padding:2px 6px;border-radius:10px;font-weight:bold}
+    .nbadge.leader{background:#f39c12;color:#000}
+    .nbadge.down{background:#e10600;color:#fff}
+    .ntime{font-size:.6rem;color:#444}
+    #eventsBar{background:#060610;border-top:1px solid #0f0f1f;padding:6px 16px;flex-shrink:0;height:110px;overflow:hidden}
+    #eventsBar h2{font-size:.65rem;color:#333;letter-spacing:3px;margin-bottom:5px}
+    #evLog{font-family:monospace;font-size:.72rem}
+    .ev{padding:2px 0}
+    .ev.HANDOFF{color:#3498db}
+    .ev.LEADER_ELECTED{color:#f39c12;font-weight:bold}
+    .ev.NODE_DOWN{color:#e10600;font-weight:bold}
+    .ev.ELECTION_STARTED{color:#9b59b6}
+    .ev.PLAYER_JOINED{color:#27ae60}
+    .ev.PLAYER_LEFT{color:#e67e22}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>RACE<span>SYNC</span> F1</h1>
+    <div class="sub">PUCE MANABÍ · SISTEMAS DISTRIBUIDOS + V&V · 2025-02</div>
+  </div>
+  <div id="vcBox">VECTOR CLOCK<div id="vcVal">[0,0,0,0]</div></div>
+</header>
+
+<div class="main">
+  <div id="trackPanel"><canvas id="track"></canvas></div>
+  <div id="sidebar">
+    <div id="standings">
+      <h2>CLASIFICACIÓN EN VIVO</h2>
+      <div id="standList"></div>
+    </div>
+    <div id="nodePanel">
+      <h2>NODOS SECTOR</h2>
+      <div class="nrow"><div class="ndot" id="nd1"></div><div class="nlabel">Sector 1</div><span class="nbadge leader" id="nb1" style="display:none">LÍDER</span><span class="nbadge down" id="nd1b" style="display:none">CAÍDO</span><div class="ntime" id="nt1">--</div></div>
+      <div class="nrow"><div class="ndot" id="nd2"></div><div class="nlabel">Sector 2</div><span class="nbadge leader" id="nb2" style="display:none">LÍDER</span><span class="nbadge down" id="nd2b" style="display:none">CAÍDO</span><div class="ntime" id="nt2">--</div></div>
+      <div class="nrow"><div class="ndot" id="nd3"></div><div class="nlabel">Sector 3</div><span class="nbadge leader" id="nb3" style="display:none">LÍDER</span><span class="nbadge down" id="nd3b" style="display:none">CAÍDO</span><div class="ntime" id="nt3">--</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="eventsBar">
+  <h2>LOG DE EVENTOS DISTRIBUIDOS</h2>
+  <div id="evLog"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket=io();
+  const track=document.getElementById('track');
+  const ctx=track.getContext('2d');
+  const byS={1:[],2:[],3:[]};
+  const carColors={};
+  const defColors=['#e10600','#00d2ff','#f39c12','#27ae60','#9b59b6','#1abc9c','#e67e22','#ff69b4'];
+  let ci=0;
+  function carCol(id){if(!carColors[id]){carColors[id]=defColors[ci%defColors.length];ci++;}return carColors[id];}
+
+  function resize(){const p=track.parentElement;track.width=p.clientWidth;track.height=p.clientHeight;}
+  window.addEventListener('resize',resize);resize();
+
+  function tPos(pct,x,y,w,h,r){
+    const P=2*(w-2*r)+2*(h-2*r)+2*Math.PI*r;let d=pct*P;
+    if(d<w-2*r)return{x:x+r+d,y};d-=(w-2*r);
+    if(d<Math.PI*r/2){const a=-Math.PI/2+d/r;return{x:x+w-r+r*Math.cos(a),y:y+r+r*Math.sin(a)};}d-=Math.PI*r/2;
+    if(d<h-2*r)return{x:x+w,y:y+r+d};d-=(h-2*r);
+    if(d<Math.PI*r/2){const a=d/r;return{x:x+w-r+r*Math.cos(a),y:y+h-r+r*Math.sin(a)};}d-=Math.PI*r/2;
+    if(d<w-2*r)return{x:x+w-r-d,y:y+h};d-=(w-2*r);
+    if(d<Math.PI*r/2){const a=Math.PI/2+d/r;return{x:x+r+r*Math.cos(a),y:y+h-r+r*Math.sin(a)};}d-=Math.PI*r/2;
+    return{x,y:y+h-r-d};
+  }
+
+  function draw(){
+    const W=track.width,H=track.height;
+    if(!W||!H)return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,W,H);
+    const mx=W*.08,my=H*.1,tw=W*.84,th=H*.78,r=Math.min(tw,th)*.4;
+    ctx.strokeStyle='#111';ctx.lineWidth=46;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
+    ctx.strokeStyle='#181828';ctx.lineWidth=40;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
+    ctx.strokeStyle='#0d0d1d';ctx.lineWidth=34;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
+    [[.33,'#27ae60'],[.66,'#3498db']].forEach(([p,c])=>{
+      const pt=tPos(p,mx,my,tw,th,r);
+      ctx.strokeStyle=c;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(pt.x-10,pt.y);ctx.lineTo(pt.x+10,pt.y);ctx.stroke();
+      ctx.fillStyle=c;ctx.font='bold 11px Segoe UI';ctx.textAlign='center';
+      ctx.fillText(p===.33?'S2':'S3',pt.x,pt.y-14);
+    });
+    const s=tPos(0,mx,my,tw,th,r);
+    ctx.fillStyle='#fff';ctx.fillRect(s.x-2,s.y-16,4,32);
+    ctx.fillStyle='#fff';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';ctx.fillText('META',s.x,s.y-20);
+    ctx.fillStyle='#27ae60';ctx.font='bold 11px Segoe UI';ctx.textAlign='left';ctx.fillText('S1',mx,my-5);
+    const allCars=Object.values(byS).flat();
+    allCars.forEach(car=>{
+      const gp=((car.sector||1)-1)*33+car.position;
+      const pt=tPos(Math.min(gp/100,0.99),mx,my,tw,th,r);
+      const col=carCol(car.carId);
+      ctx.shadowColor=col;ctx.shadowBlur=14;
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(pt.x,pt.y,9,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#fff';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';
+      ctx.fillText(car.name?.slice(0,7)||'?',pt.x,pt.y-14);
+    });
+    const sorted=[...allCars].sort((a,b)=>(((b.sector||1)-1)*33+b.position)-(((a.sector||1)-1)*33+a.position));
+    document.getElementById('standList').innerHTML=sorted.slice(0,8).map((c,i)=>`
+      <div class="stand-row">
+        <div class="pos">${i+1}</div>
+        <div class="car-dot" style="background:${carCol(c.carId)}"></div>
+        <div class="car-info">
+          <div class="car-name">${c.name||c.carId}</div>
+          <div class="car-detail">S${c.sector||1} · ${Math.round(c.position||0)}%</div>
+        </div>
+        <div class="car-speed">${Math.round((c.speed||0)*60)}</div>
+      </div>`).join('');
+  }
+  setInterval(draw,33);
+
+  socket.on('race:state',({sectorId,cars,vectorClock})=>{
+    if(cars) byS[sectorId]=cars.map(c=>({...c,sector:sectorId}));
+    document.getElementById(`nt${sectorId}`).textContent=new Date().toLocaleTimeString();
+    if(vectorClock) document.getElementById('vcVal').textContent=`[${vectorClock}]`;
+  });
+
+  socket.on('race:event',ev=>{
+    const log=document.getElementById('evLog');
+    const t=new Date().toLocaleTimeString();
+    const msgs={
+      HANDOFF:`🔄 Handoff: ${ev.carId} S${ev.fromSector}→S${ev.toSector}`,
+      LEADER_ELECTED:`👑 NUEVO LÍDER: Sector ${ev.leader} — Bully Algorithm`,
+      NODE_DOWN:`⚠️ Sector ${ev.sectorId} CAÍDO — detectado por S${ev.detectedBy}`,
+      ELECTION_STARTED:`🗳️ Elección por Sector ${ev.initiator}`,
+      PLAYER_JOINED:`🟢 ${ev.name} entró como Auto ${ev.carId}`,
+      PLAYER_LEFT:`🔴 Auto ${ev.carId} abandonó`
+    };
+    log.innerHTML=`<div class="ev ${ev.type}">[${t}] ${msgs[ev.type]||ev.type}</div>`+log.innerHTML;
+    if(log.children.length>10) log.lastElementChild.remove();
+    if(ev.type==='NODE_DOWN'){
+      document.getElementById(`nd${ev.sectorId}`).className='ndot down';
+      document.getElementById(`nd${ev.sectorId}b`).style.display='inline-block';
+    }
+    if(ev.type==='LEADER_ELECTED'){
+      [1,2,3].forEach(i=>{document.getElementById(`nd${i}`).className='ndot';document.getElementById(`nb${i}`).style.display='none';});
+      document.getElementById(`nd${ev.leader}`).className='ndot leader';
+      document.getElementById(`nb${ev.leader}`).style.display='inline-block';
+    }
+    if(ev.type==='PLAYER_JOINED'&&ev.color) carColors[ev.carId]=ev.color;
+  });
+</script>
+</body>
+</html>

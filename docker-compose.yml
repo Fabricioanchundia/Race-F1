@@ -1,0 +1,101 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - racesync
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SECTOR_1_URL=http://sector1:3001
+      - SECTOR_2_URL=http://sector2:3002
+      - SECTOR_3_URL=http://sector3:3003
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - racesync
+
+  sector1:
+    build: ./sector-node
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SECTOR_ID=1
+      - PORT=3001
+      - SECTOR_1_URL=http://sector1:3001
+      - SECTOR_2_URL=http://sector2:3002
+      - SECTOR_3_URL=http://sector3:3003
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - racesync
+
+  sector2:
+    build: ./sector-node
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SECTOR_ID=2
+      - PORT=3002
+      - SECTOR_1_URL=http://sector1:3001
+      - SECTOR_2_URL=http://sector2:3002
+      - SECTOR_3_URL=http://sector3:3003
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - racesync
+
+  sector3:
+    build: ./sector-node
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SECTOR_ID=3
+      - PORT=3003
+      - SECTOR_1_URL=http://sector1:3001
+      - SECTOR_2_URL=http://sector2:3002
+      - SECTOR_3_URL=http://sector3:3003
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - racesync
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    ports:
+      - "8090:8080"
+      - "50001:50000"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+    networks:
+      - racesync
+
+  sonarqube:
+    image: sonarqube:community
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+    networks:
+      - racesync
+
+networks:
+  racesync:
+    driver: bridge
+
+volumes:
+  jenkins_data:
+  sonar_data:
