@@ -1,3 +1,8 @@
-"node_modules/" 
-".env" 
-"*.log" 
+node_modules/
+.env
+*.log
+.venv-selenium/
+__pycache__/
+*.pyc
+.scannerwork/
+coverage/
