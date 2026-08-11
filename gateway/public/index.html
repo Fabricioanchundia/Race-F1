@@ -238,7 +238,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   <div id="tb">
     <div class="tll"><button id="pb" onclick="showPause()">&#9776;</button><div id="vc">VC [0,0,0,0]</div></div>
     <div id="bp"><div id="pn">#--</div><div id="ps">POSICIÓN</div></div>
-    <div id="lp">VUELTA <b id="ln">1</b></div>
+    <div id="lp">VUELTA <b id="ln">1</b>/<span id="lnMax">5</span></div>
   </div>
   <div id="st"><div id="stt">CLASIFICACIÓN EN VIVO</div><div id="stl"></div></div>
   <div id="nd"><div id="ndt">NODOS SECTOR</div><div id="nds">
@@ -840,15 +840,26 @@ let playerCar=null;
 window.AC={};  // inicializado AQUÍ para evitar undefined
 
 function updateCar(cid,frac,lane,color){
+  let isNew=false;
   if(!cars[cid]){
     const col=(typeof color==='string'&&color.startsWith('#'))?color:(carMats[cid]||'#888888');
     cars[cid]=makeCar(col);carMats[cid]=col;
     if(cid===myId){playerCar=cars[cid];}// camera follows via beforeRender
+    isNew=true;
   }
   const wp=f2w(frac,lane);
   cars[cid].position.set(wp.x,wp.y,wp.z);
   cars[cid].rotation.y=wp.rotY;
   if(cid===myId){myTangent={ttx:wp.ttx,ttz:wp.ttz};}
+  // Aparición suave: crece desde chico en vez de aparecer de golpe a tamaño completo
+  if(isNew){
+    cars[cid].scaling.set(.05,.05,.05);
+    let t=0;const grow=()=>{
+      t+=.09;cars[cid].scaling.set(Math.min(1,t),Math.min(1,t),Math.min(1,t));
+      if(t<1)requestAnimationFrame(grow);
+    };
+    grow();
+  }
 }
 
 // (wheel spin moved to main beforeRender)
@@ -930,6 +941,7 @@ socket.on('race:state',({sectorId,cars:sc})=>{
 });
 
 const MAX_LAPS=5; // la carrera dura 5 vueltas — antes no tenía límite, nunca terminaba
+if(g('lnMax'))g('lnMax').textContent=MAX_LAPS;
 function onHandoffEvent(ev){
   if(ev.carId!==myId)return;
   g('sl').textContent='SECTOR S'+ev.toSector;
