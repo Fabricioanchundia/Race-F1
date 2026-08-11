@@ -65,13 +65,13 @@ async function removePlayer(socketId) {
 io.on('connection', (socket) => {
   console.log(`[Gateway] Cliente conectado: ${socket.id}`);
 
-  socket.on('player:join', async ({ name, color, team }) => {
+  socket.on('player:join', async ({ name, color, team, circuit }) => {
     const carId = uuidv4().slice(0, 6).toUpperCase();
     const clock = vc.tick();
     players.set(socket.id, { carId, sectorId: 1, name: name || `Piloto_${carId}`, color, team });
     try {
-      const { data } = await axios.post(`${SECTORS[1]}/car/register`, { carId, name, color, team, vectorClock: clock });
-      socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock, raceStarted: !!data.raceStarted, queued: !!data.queued });
+      const { data } = await axios.post(`${SECTORS[1]}/car/register`, { carId, name, color, team, circuit, vectorClock: clock });
+      socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock, raceStarted: !!data.raceStarted, queued: !!data.queued, circuit: data.circuit });
       if (!data.queued) {
         await redisPub.publish('race:events', JSON.stringify({
           type: 'PLAYER_JOINED', carId, name, color, team, sectorId: 1, vectorClock: clock, timestamp: Date.now()

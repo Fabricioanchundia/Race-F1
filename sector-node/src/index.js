@@ -57,19 +57,30 @@ if (SECTOR_ID === 1) {
 let raceStarted = false; // true desde que se sueltan los bots — se lo decimos a quien se una después
 let waitingQueue = [];   // jugadores que llegaron con la carrera ya en marcha: esperan la próxima ronda
 let queueSince = null;   // cuándo empezó a esperar el primero de la cola (para el límite de seguridad)
+// BUG ARREGLADO: antes cada jugador elegía su circuito solo del lado del cliente (puro
+// cosmético) — dos jugadores en la misma carrera podían ver formas de pista totalmente
+// distintas entre sí, aunque compartieran el mismo espacio físico (posición 0-100). Ahora
+// el circuito de la ronda lo decide quien la inicia, y todos los que se suman (aunque hayan
+// elegido otro circuito en su propio menú) se sincronizan con ese mismo, vía la respuesta
+// del registro y el evento RACE_START.
+let currentCircuit = null; // null = todavía nadie decidió el de esta ronda
 
 function releaseBots() {
   raceStarted = true;
   for (const [,car] of cars) {
     if (car.isBot) car.ready = true;
   }
-  redisPub.publish('race:events', JSON.stringify({type:'RACE_START',timestamp:Date.now()}));
+  redisPub.publish('race:events', JSON.stringify({type:'RACE_START',circuit:currentCircuit,timestamp:Date.now()}));
   console.log('[Bots] ¡Arrancaron!');
 }
 
 // Coloca un piloto en la grilla de salida (usado tanto para el registro normal como
-// para cuando se libera la cola de espera al empezar una nueva ronda).
-function placeOnGrid(carId, name, color, vectorClock) {
+// para cuando se libera la cola de espera al empezar una nueva ronda). Si todavía nadie
+// decidió el circuito de esta ronda, lo fija con el que pidió este piloto.
+function placeOnGrid(carId, name, color, vectorClock, circuit) {
+  if (currentCircuit === null) {
+    currentCircuit = (typeof circuit === 'number' && circuit >= 0 && circuit <= 2) ? circuit : 0;
+  }
   const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
   const slot = gridSlot(BOTS.length + humanCount);
   cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,vectorClock,spawnUntil:Date.now()+4000});
@@ -86,14 +97,15 @@ function placeOnGrid(carId, name, color, vectorClock) {
 // el alcance de este arreglo puntual.
 function startNextWave() {
   cars.clear(); // limpia bots y cualquier humano que haya quedado (fantasma de la ronda anterior)
+  currentCircuit = null; // el primero de la cola vuelve a decidir el circuito de esta ronda
   BOTS.forEach((b,i)=>{
     const slot=gridSlot(i);
     cars.set(b.id,{name:b.name,color:b.color,position:slot.position,speed:0,lane:slot.lane,isBot:true,targetSpd:b.targetSpd,ready:false});
   });
   raceStarted = false;
   const toRelease = waitingQueue; waitingQueue = []; queueSince = null;
-  toRelease.forEach(p => placeOnGrid(p.carId, p.name, p.color, p.vectorClock));
-  console.log(`[Bots] Nueva ronda: ${toRelease.length} piloto(s) en cola pasan a la grilla`);
+  toRelease.forEach(p => placeOnGrid(p.carId, p.name, p.color, p.vectorClock, p.circuit));
+  console.log(`[Bots] Nueva ronda: ${toRelease.length} piloto(s) en cola pasan a la grilla (circuito ${currentCircuit})`);
   setTimeout(releaseBots, 5000);
 }
 
@@ -233,24 +245,24 @@ async function notifyGatewayHandoff(carId, target, attempt=1) {
 }
 
 app.post('/car/register', (req,res) => {
-  const {carId,name,color,vectorClock}=req.body;
+  const {carId,name,color,vectorClock,circuit}=req.body;
   // Si la carrera YA está en marcha, este piloto no entra al tráfico en vivo — espera
   // en cola a que termine la ronda actual (todos los humanos se vayan o terminen) para
   // arrancar sincronizado en la próxima, en vez de aparecer en medio de una carrera ajena.
   if (raceStarted && SECTOR_ID===1) {
     if (waitingQueue.length===0) queueSince = Date.now();
-    waitingQueue.push({carId,name,color,vectorClock});
+    waitingQueue.push({carId,name,color,vectorClock,circuit});
     console.log(`[S${SECTOR_ID}] Piloto ${name} en cola — esperando la próxima ronda (${waitingQueue.length} en cola)`);
-    return res.json({ok:true, queued:true});
+    return res.json({ok:true, queued:true, circuit:currentCircuit});
   }
-  placeOnGrid(carId, name, color, vectorClock);
+  placeOnGrid(carId, name, color, vectorClock, circuit);
   // Primera vez que llega un jugador real → contar 5s y soltar bots
   if (!playerJoined && SECTOR_ID===1) {
     playerJoined = true;
     console.log('[Bots] Jugador detectado, bots arrancan en 5s...');
     setTimeout(releaseBots, 5000);
   }
-  res.json({ok:true, raceStarted});
+  res.json({ok:true, raceStarted, circuit:currentCircuit});
 });
 
 app.post('/car/receive', (req,res) => { const{carId,car,fromSector}=req.body; cars.set(carId,car); console.log(`[S${SECTOR_ID}] ${carId} desde S${fromSector}`); res.json({ok:true}); });
