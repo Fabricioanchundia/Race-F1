@@ -64,7 +64,10 @@ async function updateCarPhysics(carId, car) {
       car.lane  = (car.lane||0) * .92 + (Math.random()-.5)*.02; // NOSONAR: aleatoriedad de IA de bots, no criptografica
     } else { car.speed = 0; }
   } else {
-    car.lane = (car.lane||0) * .88;
+    // El carril del jugador solo vuelve al centro MUY lentamente (antes era *.88 cada
+    // 100ms, o sea se recentraba solo en ~1s) -- eso deshacía la separación lograda tras
+    // chocar, y los autos volvían a juntarse y chocar en bucle infinito sin poder avanzar.
+    car.lane = (car.lane||0) * .992;
   }
   car.position = Number.parseFloat((car.position + car.speed * .1).toFixed(2));
   if (car.position >= RANGE[SECTOR_ID].max) {
