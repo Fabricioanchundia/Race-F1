@@ -1148,7 +1148,11 @@ socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,ci
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
   if(queued){
     _isQueued=true;
-    syncCircuitWithServer(circuit);
+    // NO sincronizamos el circuito acá: el que devuelve el servidor mientras estás en
+    // cola es el de la carrera YA EN VIVO, que no tiene nada que ver con la tuya —
+    // tu circuito real recién se decide cuando arranca tu propia ronda (ver RACE_START
+    // más abajo). Sincronizar acá de más causaba una reconstrucción de pista extra e
+    // innecesaria justo antes de arrancar.
     g('sel').style.display='none';
     g('waitRoom').style.display='flex';
     addLog('En cola — esperando la próxima ronda...','li');
