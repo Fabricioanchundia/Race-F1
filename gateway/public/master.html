@@ -103,15 +103,35 @@
     return{x,y:y+h-r-d};
   }
 
+  // Dibuja el patrón de curb rojo/blanco (como el borde real de una pista de F1)
+  function drawCurb(x,y,w,h,r,lw){
+    const P=2*(w-2*r)+2*(h-2*r)+2*Math.PI*r;
+    const stripe=14; // largo de cada franja en px
+    const n=Math.round(P/stripe);
+    ctx.lineWidth=lw;ctx.lineCap='butt';
+    for(let i=0;i<n;i++){
+      ctx.strokeStyle=i%2===0?'#d81c1c':'#f2f2f2';
+      ctx.beginPath();
+      const p0=tPos(i/n,x,y,w,h,r),p1=tPos((i+1)/n,x,y,w,h,r);
+      ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);
+      ctx.stroke();
+    }
+  }
+
   function draw(){
     const W=track.width,H=track.height;
     if(!W||!H)return;
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle='#06060f';ctx.fillRect(0,0,W,H);
     const mx=W*.08,my=H*.1,tw=W*.84,th=H*.78,r=Math.min(tw,th)*.4;
-    ctx.strokeStyle='#111';ctx.lineWidth=46;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
-    ctx.strokeStyle='#181828';ctx.lineWidth=40;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
-    ctx.strokeStyle='#0d0d1d';ctx.lineWidth=34;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
+    // Curbs (rojo/blanco alternado) a ambos lados — como un circuito real visto desde arriba
+    ctx.strokeStyle='#8a8a92';ctx.lineWidth=50;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
+    drawCurb(mx,my,tw,th,r,46);
+    // Asfalto: negro real (no gris)
+    ctx.strokeStyle='#050507';ctx.lineWidth=36;ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();
+    // Línea central tenue, como el eje de la pista
+    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;ctx.setLineDash([8,10]);
+    ctx.beginPath();ctx.roundRect(mx,my,tw,th,r);ctx.stroke();ctx.setLineDash([]);
     [[.33,'#27ae60'],[.66,'#3498db']].forEach(([p,c])=>{
       const pt=tPos(p,mx,my,tw,th,r);
       ctx.strokeStyle=c;ctx.lineWidth=3;
@@ -124,17 +144,24 @@
     ctx.fillStyle='#fff';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';ctx.fillText('META',s.x,s.y-20);
     ctx.fillStyle='#27ae60';ctx.font='bold 11px Segoe UI';ctx.textAlign='left';ctx.fillText('S1',mx,my-5);
     const allCars=Object.values(byS).flat();
+    const drawnLabels=[]; // para evitar que las etiquetas de autos cercanos se superpongan
     allCars.forEach(car=>{
-      const gp=((car.sector||1)-1)*33+car.position;
+      // car.position YA es la posición global 0-100 (viene así del sector-node,
+      // el handoff la continúa, no la reinicia). car.sector solo es para mostrar.
+      const gp=car.position;
       const pt=tPos(Math.min(gp/100,0.99),mx,my,tw,th,r);
       const col=carCol(car.carId);
       ctx.shadowColor=col;ctx.shadowBlur=14;
       ctx.fillStyle=col;ctx.beginPath();ctx.arc(pt.x,pt.y,9,0,Math.PI*2);ctx.fill();
       ctx.shadowBlur=0;
+      // Si ya hay una etiqueta muy cerca (auto pegado a otro), la bajamos un nivel más
+      let stack=0;
+      while(drawnLabels.some(l=>Math.hypot(l.x-pt.x,l.y-pt.y)<26&&l.stack===stack))stack++;
+      drawnLabels.push({x:pt.x,y:pt.y,stack});
       ctx.fillStyle='#fff';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';
-      ctx.fillText(car.name?.slice(0,7)||'?',pt.x,pt.y-14);
+      ctx.fillText(car.name?.slice(0,7)||'?',pt.x,pt.y-14-stack*13);
     });
-    const sorted=[...allCars].sort((a,b)=>(((b.sector||1)-1)*33+b.position)-(((a.sector||1)-1)*33+a.position));
+    const sorted=[...allCars].sort((a,b)=>(b.position||0)-(a.position||0));
     document.getElementById('standList').innerHTML=sorted.slice(0,8).map((c,i)=>`
       <div class="stand-row">
         <div class="pos">${i+1}</div>

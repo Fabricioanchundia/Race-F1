@@ -426,7 +426,7 @@ const groundTex=new BABYLON.DynamicTexture('groundTex',{width:1024,height:1024},
   const c=groundTex.getContext(),W=1024,H=1024,cx=W/2,cy=H/2;
   const innerR=190; // radio verde alrededor del circuito (en px de textura) — reducido
   // Fondo urbano base (asfalto/tierra)
-  c.fillStyle='#6b6d5f';c.fillRect(0,0,W,H);
+  c.fillStyle='#141414';c.fillRect(0,0,W,H);
   // Manzanas de ciudad: cuadrícula de calles + edificios/parkings
   const cell=64;
   for(let gx=0;gx<W;gx+=cell){
@@ -518,7 +518,7 @@ function buildTrack(){
   const ax=at.getContext();ax.fillStyle='#0a0a0d';ax.fillRect(0,0,512,512);
   for(let i=0;i<5000;i++){const v=Math.floor(rnd()*14+8);ax.fillStyle=`rgb(${v},${v},${v+2})`;ax.fillRect(rnd()*512,rnd()*512,1.5,1);}
   at.update();at.vScale=20;
-  const rm=new BABYLON.StandardMaterial('rm',scene);rm.diffuseTexture=at;rm.specularColor=new C3(.12,.12,.14);rm.specularPower=64;
+  const rm=new BABYLON.StandardMaterial('rm',scene);rm.diffuseTexture=at;rm.specularColor=new C3(.02,.02,.02);rm.specularPower=64;
   const km=new BABYLON.StandardMaterial('km',scene);
   const kt=new BABYLON.DynamicTexture('kt',{width:256,height:32},scene);
   const kx=kt.getContext();for(let i=0;i<16;i++){kx.fillStyle=i%2===0?'#dd1010':'#f0f0f0';kx.fillRect(i*16,0,16,32);}

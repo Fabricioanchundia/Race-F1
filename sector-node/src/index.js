@@ -100,6 +100,9 @@ async function handlePair(idA, cA, idB, cB, hit, now) {
   // Un bot que AÚN NO arrancó (esperando en la grilla) no debe chocar con nadie —
   // si no, el jugador nace pegado a él y queda atrapado sin poder acelerar nunca.
   if ((cA.isBot && !cA.ready) || (cB.isBot && !cB.ready)) return;
+  // Auto recién registrado (jugador que entra a una carrera ya en marcha) —
+  // inmunidad breve para que le dé tiempo a arrancar antes de que lo choquen
+  if ((cA.spawnUntil && now < cA.spawnUntil) || (cB.spawnUntil && now < cB.spawnUntil)) return;
   if (!isColliding(cA,cB)) return;
   const key = idA<idB ? idA+'|'+idB : idB+'|'+idA;
   separateLanes(cA,cB);
@@ -148,7 +151,7 @@ app.post('/car/register', (req,res) => {
   const lane = laneSlots[humanCount % laneSlots.length];
   // También separamos un poco la posición de arranque para que ni siquiera el carril los salve de chocar
   const posOffset = Math.floor(humanCount/laneSlots.length)*1.5;
-  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+28+posOffset,speed:0,lane,vectorClock});
+  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+28+posOffset,speed:0,lane,vectorClock,spawnUntil:Date.now()+4000});
   console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${lane})`);
   // Primera vez que llega un jugador real → contar 5s y soltar bots
   if (!playerJoined && SECTOR_ID===1) {
