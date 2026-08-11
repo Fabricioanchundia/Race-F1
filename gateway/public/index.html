@@ -590,6 +590,16 @@ function buildTrack(){
   const kt=new BABYLON.DynamicTexture('kt',{width:256,height:32},scene);
   const kx=kt.getContext();for(let i=0;i<16;i++){kx.fillStyle=i%2===0?'#dd1010':'#f0f0f0';kx.fillRect(i*16,0,16,32);}
   kt.update();kt.uScale=24;km.diffuseTexture=kt;
+  // Segundo estilo de kerb (chevrones verde/amarillo, como en circuitos reales tipo Mónaco) —
+  // le da variedad de color entre el borde izquierdo y derecho de la pista.
+  const km2=new BABYLON.StandardMaterial('km2',scene);
+  const kt2=new BABYLON.DynamicTexture('kt2',{width:256,height:32},scene);
+  const kx2=kt2.getContext();
+  for(let i=0;i<8;i++){
+    kx2.fillStyle=i%2===0?'#f0c300':'#0d7a2e';
+    kx2.beginPath();kx2.moveTo(i*32,0);kx2.lineTo(i*32+16,0);kx2.lineTo(i*32,32);kx2.lineTo(i*32-16,32);kx2.closePath();kx2.fill();
+  }
+  kt2.update();kt2.uScale=24;km2.diffuseTexture=kt2;
   const ri=[],ro=[],li=[],lo=[],ri2=[],ro2=[];
   for(let i=0;i<=SEGS;i++){const info=TP(i/SEGS);
     const{x,z,nx,nz}=info;
@@ -599,7 +609,7 @@ function buildTrack(){
   }
   BABYLON.MeshBuilder.CreateRibbon('road',{pathArray:[ri,ro],closePath:true},scene).material=rm;
   BABYLON.MeshBuilder.CreateRibbon('lk',{pathArray:[li,lo],closePath:true},scene).material=km;
-  BABYLON.MeshBuilder.CreateRibbon('rk',{pathArray:[ri2,ro2],closePath:true},scene).material=km;
+  BABYLON.MeshBuilder.CreateRibbon('rk',{pathArray:[ri2,ro2],closePath:true},scene).material=km2;
   // Run-off pintado (zona de escape asfaltada, como en un circuito real — no solo pasto)
   const roTex=SM('roTex',()=>{
     const t=new BABYLON.DynamicTexture('roTex',{width:256,height:256},scene);const c=t.getContext();
@@ -626,6 +636,35 @@ function buildTrack(){
     const b=bt.createInstance('b'+i+'_'+sd);b.position.set(bx,.55,bz);b.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(b);
     if(i%3===0){const s=st2.createInstance('s'+i+'_'+sd);s.position.set(bx,.65,bz);s.rotation.y=info.angle+Math.PI/2;}
   });}
+  // Pit lane: fila de boxes/garajes + carril lateral marcado, cerca de la línea de meta
+  // (elemento que faltaba — se ve en cualquier circuito real)
+  (function buildPitLane(){
+    const PL_OFF=BOFF+5; // qué tan afuera del track va el carril de pit
+    const t0=0.80,t1=0.99,N=24;
+    const pli=[],plo=[];
+    for(let i=0;i<=N;i++){
+      const t=t0+(t1-t0)*(i/N),info=TP(t);
+      pli.push(new BABYLON.Vector3(info.x+info.nx*(PL_OFF-2.2),.02,info.z+info.nz*(PL_OFF-2.2)));
+      plo.push(new BABYLON.Vector3(info.x+info.nx*(PL_OFF+2.2),.02,info.z+info.nz*(PL_OFF+2.2)));
+    }
+    const plMat=new BABYLON.StandardMaterial('plMat',scene);plMat.diffuseColor=new C3(.09,.09,.1);plMat.specularColor=new C3(0,0,0);
+    BABYLON.MeshBuilder.CreateRibbon('pitLane',{pathArray:[pli,plo],closePath:false},scene).material=plMat;
+    // Garajes: cajas simples con puerta numerada, una por equipo
+    const boxMat=new BABYLON.StandardMaterial('boxMat',scene);boxMat.diffuseColor=new C3(.85,.85,.9);boxMat.specularColor=new C3(.1,.1,.1);
+    const doorColors=[new C3(.88,.02,0),new C3(.06,.16,.85),new C3(0,.7,.6),new C3(1,.5,0),new C3(0,.35,.2),new C3(0,.45,.9)];
+    for(let b=0;b<6;b++){
+      const t=t0+(t1-t0)*((b+.5)/6),info=TP(t);
+      const gx=info.x+info.nx*(PL_OFF+4.2),gz=info.z+info.nz*(PL_OFF+4.2);
+      const garage=BABYLON.MeshBuilder.CreateBox('garage'+b,{width:3.2,height:2.6,depth:3.4},scene);
+      garage.material=boxMat;garage.position.set(gx,1.3,gz);garage.rotation.y=info.angle+Math.PI/2;
+      shadowGen.addShadowCaster(garage);
+      const doorMat=new BABYLON.StandardMaterial('doorMat'+b,scene);
+      doorMat.diffuseColor=doorColors[b%doorColors.length];doorMat.emissiveColor=doorColors[b%doorColors.length].scale(.3);
+      const door=BABYLON.MeshBuilder.CreateBox('door'+b,{width:2.2,height:1.8,depth:.1},scene);
+      door.material=doorMat;
+      door.position.set(gx-info.nx*1.71,1.1,gz-info.nz*1.71);door.rotation.y=info.angle+Math.PI/2;
+    }
+  })();
   // Sector markers (S2 verde, S3 azul) — la meta (t=0) se dibuja aparte, más abajo, con más detalle
   [[.33,new C3(.1,.7,.2)],[.66,new C3(.1,.45,1)]].forEach(([t,col])=>{
     const info=TP(t);const m=BABYLON.MeshBuilder.CreateBox('mk',{width:RW_H*2+KW*2+.6,height:.08,depth:.5},scene);
@@ -664,14 +703,22 @@ function buildTrack(){
     const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.7,height:1.5},scene);
     banner.material=banMat;banner.position.set(info.x,gH-1.2,info.z);banner.rotation.y=info.angle+Math.PI/2;
   })();
-  // Vallas publicitarias de patrocinadores (colores sólidos — sin texturas, cero riesgo de glitch visual)
+  // Vallas publicitarias: mezcla de colores sólidos + vallas con el logo "RACESYNC"
   const adColors=[new C3(.88,.02,0),new C3(0,.2,.63),new C3(.11,.11,.11),new C3(1,.48,0),new C3(.04,.48,.24)];
   const adMats=adColors.map((col,idx)=>{const m=new BABYLON.StandardMaterial('adm'+idx,scene);m.diffuseColor=col;m.emissiveColor=col.scale(.35);m.specularColor=new C3(0,0,0);return m;});
+  const brandTex=SM('brandTex',()=>{
+    const t=new BABYLON.DynamicTexture('brandTex',{width:512,height:128},scene);const bc=t.getContext();
+    bc.fillStyle='#0a0a12';bc.fillRect(0,0,512,128);
+    bc.fillStyle='#e10600';bc.font='bold 54px Segoe UI';bc.textAlign='center';bc.textBaseline='middle';
+    bc.fillText('RACE',195,64);bc.fillStyle='#fff';bc.fillText('SYNC',350,64);
+    t.update();return t;});
+  const brandMat=SM('brandMat',()=>{const m=new BABYLON.StandardMaterial('brandMat',scene);m.diffuseTexture=brandTex;m.emissiveColor=new C3(.5,.5,.5);m.specularColor=new C3(0,0,0);return m;});
   const AOFF=BOFF+1.3;
   for(let i=0;i<24;i++){const info=TP(i/24);[-1,1].forEach(sd=>{
     const ax=info.x+info.nx*sd*AOFF,az=info.z+info.nz*sd*AOFF;
     const ad=BABYLON.MeshBuilder.CreateBox('ad'+i+'_'+sd,{width:4.4,height:1.1,depth:.12},scene);
-    ad.material=adMats[i%adMats.length];ad.position.set(ax,1.1,az);ad.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(ad);
+    ad.material=(i%3===0)?brandMat:adMats[i%adMats.length]; // cada 3ra valla es "RACESYNC"
+    ad.position.set(ax,1.1,az);ad.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(ad);
   });}
   // Light poles
   const pm=new BABYLON.StandardMaterial('pm',scene);pm.diffuseColor=new C3(.55,.55,.58);
