@@ -54,7 +54,10 @@ if (SECTOR_ID === 1) {
   });
 }
 
+let raceStarted = false; // true desde que se sueltan los bots — se lo decimos a quien se una después
+
 function releaseBots() {
+  raceStarted = true;
   for (const [,car] of cars) {
     if (car.isBot) car.ready = true;
   }
@@ -198,7 +201,7 @@ app.post('/car/register', (req,res) => {
     console.log('[Bots] Jugador detectado, bots arrancan en 5s...');
     setTimeout(releaseBots, 5000);
   }
-  res.json({ok:true});
+  res.json({ok:true, raceStarted});
 });
 
 app.post('/car/receive', (req,res) => { const{carId,car,fromSector}=req.body; cars.set(carId,car); console.log(`[S${SECTOR_ID}] ${carId} desde S${fromSector}`); res.json({ok:true}); });

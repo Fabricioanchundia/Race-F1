@@ -138,6 +138,10 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .sll{font-size:.62rem;color:#8a8a8a;letter-spacing:.12em;margin-left:6px;}
 /* PAUSE */
 #pm{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,8,.82);backdrop-filter:blur(8px);}
+#fin{position:fixed;inset:0;z-index:410;display:none;align-items:center;justify-content:center;background:rgba(0,0,8,.9);backdrop-filter:blur(10px);}
+.fin-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px;background:rgba(255,255,255,.04);font-size:.82rem;}
+.fin-row.me{background:rgba(225,6,0,.18);border:1px solid rgba(225,6,0,.4);}
+.fin-pos{font-weight:900;color:#f39c12;min-width:20px;}
 .pmc{background:rgba(6,4,22,.96);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:32px 38px;text-align:center;min-width:270px;}
 .pmt{font-size:1.3rem;font-weight:bold;margin-bottom:5px;}.pmt span{color:#e10600;}
 .pms{font-size:.75rem;color:#8a8a8a;margin-bottom:22px;}
@@ -254,6 +258,12 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   <div class="pms">RaceSync F1 · 2026-1</div>
   <button class="pmb g" onclick="hidePause()">&#9654;&nbsp;Continuar</button>
   <button class="pmb d" onclick="location.reload()">&#8634;&nbsp;Menú principal</button>
+</div></div>
+<div id="fin"><div class="pmc">
+  <div class="pmt">&#127937;&nbsp;<span id="finTitle">¡CARRERA TERMINADA!</span></div>
+  <div class="pms" id="finPos">Posición final: —</div>
+  <div id="finBoard" style="text-align:left;margin-bottom:18px;max-height:220px;overflow:auto"></div>
+  <button class="pmb g" onclick="location.reload()">&#8634;&nbsp;Nueva carrera</button>
 </div></div>
 <div id="cmdDbg" style="position:fixed;top:70px;left:10px;display:none;
   background:#000;color:#0f0;font:bold 18px monospace;padding:10px 18px;border-radius:8px;
@@ -564,12 +574,44 @@ function buildTrack(){
     const b=bt.createInstance('b'+i+'_'+sd);b.position.set(bx,.55,bz);b.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(b);
     if(i%3===0){const s=st2.createInstance('s'+i+'_'+sd);s.position.set(bx,.65,bz);s.rotation.y=info.angle+Math.PI/2;}
   });}
-  // Sector markers
-  [[.33,new C3(.1,.7,.2)],[.66,new C3(.1,.45,1)],[0,new C3(1,1,1)]].forEach(([t,col])=>{
+  // Sector markers (S2 verde, S3 azul) — la meta (t=0) se dibuja aparte, más abajo, con más detalle
+  [[.33,new C3(.1,.7,.2)],[.66,new C3(.1,.45,1)]].forEach(([t,col])=>{
     const info=TP(t);const m=BABYLON.MeshBuilder.CreateBox('mk',{width:RW_H*2+KW*2+.6,height:.08,depth:.5},scene);
     const mm=new BABYLON.StandardMaterial('mm'+t,scene);mm.diffuseColor=col;mm.emissiveColor=col.scale(.3);
     m.material=mm;m.position.set(info.x,0.06,info.z);m.rotation.y=info.angle+Math.PI/2;
   });
+  // Línea de META: bandera a cuadros real (textura), no un rayón liso — bien visible
+  (function buildFinishLine(){
+    const info=TP(0);
+    const ckTex=new BABYLON.DynamicTexture('ckTex',{width:128,height:32},scene);
+    const cx=ckTex.getContext();const sq=8;
+    for(let yy=0;yy<32;yy+=sq)for(let xx=0;xx<128;xx+=sq){
+      cx.fillStyle=((xx/sq+yy/sq)%2===0)?'#fff':'#0a0a0a';cx.fillRect(xx,yy,sq,sq);
+    }
+    ckTex.update();
+    const ckMat=new BABYLON.StandardMaterial('ckMat',scene);ckMat.diffuseTexture=ckTex;ckMat.emissiveColor=new C3(.25,.25,.25);
+    const line=BABYLON.MeshBuilder.CreateBox('finishLine',{width:RW_H*2+KW*2+.6,height:.1,depth:1.1},scene);
+    line.material=ckMat;line.position.set(info.x,0.07,info.z);line.rotation.y=info.angle+Math.PI/2;
+    // Pórtico sobre la pista, con letrero META (como el gantry de una pista real)
+    const postMat=new BABYLON.StandardMaterial('postMat',scene);postMat.diffuseColor=new C3(.85,.85,.9);postMat.specularColor=new C3(.3,.3,.3);
+    const gW=RW_H*2+KW*2+2,gH=6.4;
+    [-1,1].forEach(sd=>{
+      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.4,height:gH,tessellation:10},scene);
+      post.material=postMat;
+      post.position.set(info.x+info.nx*sd*(gW/2),gH/2,info.z+info.nz*sd*(gW/2));
+      shadowGen.addShadowCaster(post);
+    });
+    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.5,depth:.5},scene);
+    beam.material=postMat;beam.position.set(info.x,gH,info.z);beam.rotation.y=info.angle+Math.PI/2;
+    shadowGen.addShadowCaster(beam);
+    const banTex=new BABYLON.DynamicTexture('banTex',{width:512,height:96},scene);
+    const bx2=banTex.getContext();bx2.fillStyle='#e10600';bx2.fillRect(0,0,512,96);
+    bx2.fillStyle='#fff';bx2.font='bold 60px Segoe UI';bx2.textAlign='center';bx2.textBaseline='middle';
+    bx2.fillText('META',256,50);banTex.update();
+    const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.4,.05,.05);banMat.backFaceCulling=false;
+    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.7,height:1.5},scene);
+    banner.material=banMat;banner.position.set(info.x,gH-1.2,info.z);banner.rotation.y=info.angle+Math.PI/2;
+  })();
   // Vallas publicitarias de patrocinadores (colores sólidos — sin texturas, cero riesgo de glitch visual)
   const adColors=[new C3(.88,.02,0),new C3(0,.2,.63),new C3(.11,.11,.11),new C3(1,.48,0),new C3(.04,.48,.24)];
   const adMats=adColors.map((col,idx)=>{const m=new BABYLON.StandardMaterial('adm'+idx,scene);m.diffuseColor=col;m.emissiveColor=col.scale(.35);m.specularColor=new C3(0,0,0);return m;});
@@ -849,8 +891,10 @@ setTimeout(()=>{
 // ── SOCKET.IO ────────────────────────────────────────────────
 const socket=io();const ns={1:'ok',2:'ok',3:'ok'};
 
-socket.on('player:registered',({carId,sectorId,vectorClock})=>{
+let _raceAlreadyStarted=false; // se pone en true si el servidor dice que ya arrancó, o si llega el evento en vivo
+socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
+  if(raceStarted)_raceAlreadyStarted=true;
   g('sel').style.display='none'; // ← FIX: esto faltaba, por eso se quedaba "Conectando..."
   g('hud').style.display='block';g('ctl').style.display='grid';if(g('cmdDbg'))g('cmdDbg').style.display='block';
   g('sl').textContent='SECTOR S'+sectorId;
@@ -861,8 +905,13 @@ socket.on('player:registered',({carId,sectorId,vectorClock})=>{
   playerCar.position.set(wp.x,wp.y,wp.z);
   playerCar.rotation.y=wp.rotY;
   myTangent={ttx:wp.ttx,ttz:wp.ttz}; // para que la cámara ya sepa hacia dónde mirar desde el primer cuadro
-  gameState='countdown';
-  runLights(()=>{gameState='racing';addLog('🚥 ¡GO!','lg2');});
+  if(_raceAlreadyStarted){
+    // La carrera ya está en marcha (te uniste tarde) — entrás directo, sin luces falsas
+    gameState='racing';addLog('🚥 Carrera en marcha — arrancaste sobre la marcha','lg2');
+  } else {
+    gameState='countdown';
+    addLog('Esperando el arranque oficial...','li');
+  }
 });
 
 socket.on('race:state',({sectorId,cars:sc})=>{
@@ -880,11 +929,32 @@ socket.on('race:state',({sectorId,cars:sc})=>{
   updateHUD();
 });
 
+const MAX_LAPS=5; // la carrera dura 5 vueltas — antes no tenía límite, nunca terminaba
 function onHandoffEvent(ev){
   if(ev.carId!==myId)return;
   g('sl').textContent='SECTOR S'+ev.toSector;
-  if(ev.toSector===1&&ev.fromSector===3){myLap++;g('ln').textContent=myLap;addLog('Vuelta '+myLap+'!','lg2');}
+  if(ev.toSector===1&&ev.fromSector===3){
+    myLap++;g('ln').textContent=myLap;
+    if(myLap>MAX_LAPS){finishRace();return;}
+    addLog('Vuelta '+myLap+'!','lg2');
+  }
   else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
+}
+// Termina la carrera para el jugador: congela los controles y muestra el podio final
+// con la clasificación tal como está en ese momento.
+function finishRace(){
+  if(gameState==='finished')return;
+  gameState='finished';
+  const sorted=Object.entries(window.AC||{}).sort((a,b)=>(b[1].position||0)-(a[1].position||0));
+  const myIdx=sorted.findIndex(([id])=>id===myId);
+  g('finPos').textContent=myIdx>=0?('Terminaste en la posición '+(myIdx+1)+' de '+sorted.length):'¡Carrera completada!';
+  g('finBoard').innerHTML=sorted.slice(0,8).map(([id,c],i)=>`
+    <div class="fin-row${id===myId?' me':''}">
+      <div class="fin-pos">${i+1}</div>
+      <div style="flex:1">${c.name||id}${id===myId?' (TÚ)':''}</div>
+    </div>`).join('');
+  g('fin').style.display='flex';
+  addLog('🏁 ¡Carrera terminada!','lg2');
 }
 function onCollisionEvent(ev){
   if(ev.carA!==myId&&ev.carB!==myId)return;
@@ -927,9 +997,18 @@ function refreshNodeStatus(ev){
   if(ev.type==='LEADER_ELECTED'){Object.keys(ns).forEach(k=>{if(ns[k]!=='d')ns[k]='ok';});ns[ev.leader]='l';}
   g('nds').innerHTML=[1,2,3].map(i=>`<div class="nn ns-${ns[i]}"><span class="nd"></span> S${i}${ns[i]==='l'?'<span class="nb">L</span>':''}${ns[i]==='d'?'<span class="nb nb2">!</span>':''}</div>`).join('');
 }
+function onRaceStartEvent(){
+  _raceAlreadyStarted=true;
+  // Si ya estoy registrado y en 'countdown', arranco las luces JUSTO AHORA, al mismo
+  // tiempo que todos los demás navegadores conectados (mismo evento, mismo instante).
+  if(gameState==='countdown'){
+    runLights(()=>{gameState='racing';addLog('🚥 ¡GO!','lg2');});
+  }
+}
 socket.on('race:event',ev=>{
   if(ev.type==='HANDOFF')onHandoffEvent(ev);
   if(ev.type==='COLLISION')onCollisionEvent(ev);
+  if(ev.type==='RACE_START')onRaceStartEvent();
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
   if(ev.type==='NODE_DOWN')addLog('S'+ev.sectorId+' CAÍDO','lw');
   if(ev.type==='PLAYER_JOINED'&&ev.color)carMats[ev.carId]=ev.color;
@@ -1093,14 +1172,24 @@ function playCarFeedback(a){
     const targetLean=(a==='steerLeft'?1:-1)*.16; // se inclina hacia el giro, como al tomar una curva
     clearTimeout(_leanT);
     playerCar.rotation.z=targetLean;
+    // Ruedas delanteras girando hacia el lado (índices 0 y 1 = delanteras, ver makeCar)
+    const frontWheels=(playerCar._tires||[]).slice(0,2);
+    const wheelTurn=(a==='steerLeft'?1:-1)*.4;
+    frontWheels.forEach(w=>{w.rotation.y=wheelTurn;});
     _leanT=setTimeout(()=>{ // vuelve derecho de a poco
-      const back=()=>{playerCar.rotation.z*=.8;if(Math.abs(playerCar.rotation.z)>.005)requestAnimationFrame(back);else playerCar.rotation.z=0;};
+      const back=()=>{
+        playerCar.rotation.z*=.8;
+        frontWheels.forEach(w=>{w.rotation.y*=.8;});
+        if(Math.abs(playerCar.rotation.z)>.005){requestAnimationFrame(back);}
+        else{playerCar.rotation.z=0;frontWheels.forEach(w=>{w.rotation.y=0;});}
+      };
       back();
     },90);
   }
 }
 function cmd(a){
   if(!myId){console.warn('[cmd] IGNORADO — todavia no hay myId (no estas registrado)');return;}
+  if(gameState==='finished')return; // la carrera ya terminó para vos, no se mandan más comandos
   cmdCount++;
   myVC[3]++;socket.emit('car:command',{action:a,vectorClock:[...myVC]});
   playCarFeedback(a);

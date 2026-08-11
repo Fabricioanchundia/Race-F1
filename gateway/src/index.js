@@ -56,8 +56,8 @@ io.on('connection', (socket) => {
     const clock = vc.tick();
     players.set(socket.id, { carId, sectorId: 1, name: name || `Piloto_${carId}`, color, team });
     try {
-      await axios.post(`${SECTORS[1]}/car/register`, { carId, name, color, team, vectorClock: clock });
-      socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock });
+      const { data } = await axios.post(`${SECTORS[1]}/car/register`, { carId, name, color, team, vectorClock: clock });
+      socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock, raceStarted: !!data.raceStarted });
       await redisPub.publish('race:events', JSON.stringify({
         type: 'PLAYER_JOINED', carId, name, color, team, sectorId: 1, vectorClock: clock, timestamp: Date.now()
       }));
