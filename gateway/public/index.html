@@ -160,6 +160,9 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 /* PAUSE */
 #pm{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,8,.82);backdrop-filter:blur(8px);}
 #fin{position:fixed;inset:0;z-index:410;display:none;align-items:center;justify-content:center;background:rgba(0,0,8,.9);backdrop-filter:blur(10px);}
+#waitRoom{position:fixed;inset:0;z-index:410;display:none;align-items:center;justify-content:center;background:rgba(0,0,8,.9);backdrop-filter:blur(10px);}
+@keyframes waitPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+#waitDots{animation:waitPulse 1.2s ease-in-out infinite;}
 .fin-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px;background:rgba(255,255,255,.04);font-size:.82rem;}
 .fin-row.me{background:rgba(225,6,0,.18);border:1px solid rgba(225,6,0,.4);}
 .fin-pos{font-weight:900;color:#f39c12;min-width:20px;}
@@ -304,6 +307,12 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   <div class="pms" id="finPos">Posición final: —</div>
   <div id="finBoard" style="text-align:left;margin-bottom:18px;max-height:220px;overflow:auto"></div>
   <button class="pmb g" onclick="location.reload()">&#8634;&nbsp;Nueva carrera</button>
+</div></div>
+<div id="waitRoom"><div class="pmc">
+  <div class="pmt">&#8987;&nbsp;<span>CARRERA EN MARCHA</span></div>
+  <div class="pms">Hay una ronda corriendo ahora mismo — vas a arrancar apenas termine, junto con todos los que lleguen mientras esperas.</div>
+  <div id="waitDots" style="font-size:1.4rem;letter-spacing:.3em;margin-bottom:14px;color:#e10600;">&#9679;&#9675;&#9675;</div>
+  <button class="pmb d" onclick="location.reload()">&#8634;&nbsp;Cancelar</button>
 </div></div>
 <div id="cmdDbg" style="position:fixed;top:70px;left:10px;display:none;
   background:#000;color:#0f0;font:bold 18px monospace;padding:10px 18px;border-radius:8px;
@@ -1011,8 +1020,16 @@ window.addEventListener('pagehide',()=>{
 });
 
 let _raceAlreadyStarted=false; // se pone en true si el servidor dice que ya arrancó, o si llega el evento en vivo
-socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted})=>{
+let _isQueued=false; // true mientras esperamos la próxima ronda (la actual ya está en marcha)
+socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
+  if(queued){
+    _isQueued=true;
+    g('sel').style.display='none';
+    g('waitRoom').style.display='flex';
+    addLog('En cola — esperando la próxima ronda...','li');
+    return; // no se crea el auto todavía: el servidor lo hace recién cuando arranque la próxima ronda
+  }
   if(raceStarted)_raceAlreadyStarted=true;
   g('sel').style.display='none'; // ← FIX: esto faltaba, por eso se quedaba "Conectando..."
   g('hud').style.display='block';g('ctl').style.display='grid';if(g('cmdDbg'))g('cmdDbg').style.display='block';
@@ -1119,6 +1136,19 @@ function refreshNodeStatus(ev){
 }
 function onRaceStartEvent(){
   _raceAlreadyStarted=true;
+  if(_isQueued){
+    // Nos tocó el turno: el servidor ya nos puso en la grilla de la nueva ronda,
+    // ahora sí creamos el auto y arrancamos las luces, igual que todos los demás.
+    _isQueued=false;
+    g('waitRoom').style.display='none';
+    g('hud').style.display='block';g('ctl').style.display='grid';if(g('cmdDbg'))g('cmdDbg').style.display='block';
+    const wp=f2w(1,0);
+    cars[myId]=makeCar(myCol);playerCar=cars[myId];
+    playerCar.position.set(wp.x,wp.y,wp.z);
+    playerCar.rotation.y=wp.rotY;
+    myTangent={ttx:wp.ttx,ttz:wp.ttz};
+    gameState='countdown';
+  }
   // Si ya estoy registrado y en 'countdown', arranco las luces JUSTO AHORA, al mismo
   // tiempo que todos los demás navegadores conectados (mismo evento, mismo instante).
   if(gameState==='countdown'){

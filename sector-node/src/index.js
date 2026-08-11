@@ -55,6 +55,8 @@ if (SECTOR_ID === 1) {
 }
 
 let raceStarted = false; // true desde que se sueltan los bots — se lo decimos a quien se una después
+let waitingQueue = [];   // jugadores que llegaron con la carrera ya en marcha: esperan la próxima ronda
+let queueSince = null;   // cuándo empezó a esperar el primero de la cola (para el límite de seguridad)
 
 function releaseBots() {
   raceStarted = true;
@@ -63,6 +65,49 @@ function releaseBots() {
   }
   redisPub.publish('race:events', JSON.stringify({type:'RACE_START',timestamp:Date.now()}));
   console.log('[Bots] ¡Arrancaron!');
+}
+
+// Coloca un piloto en la grilla de salida (usado tanto para el registro normal como
+// para cuando se libera la cola de espera al empezar una nueva ronda).
+function placeOnGrid(carId, name, color, vectorClock) {
+  const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
+  const slot = gridSlot(BOTS.length + humanCount);
+  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,vectorClock,spawnUntil:Date.now()+4000});
+  console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${slot.lane}, pos ${slot.position})`);
+}
+
+// Arranca una nueva ronda para todos los que estaban esperando en cola: resetea los
+// bots a la grilla, saca cualquier auto humano que haya quedado (fantasmas de la ronda
+// anterior) y ubica a los de la cola, todos juntos, como si fuera una carrera nueva.
+// LIMITACIÓN CONOCIDA: si justo en este instante un bot está físicamente de tránsito
+// por el sector 2 o 3 (procesos separados), esta función no lo puede tocar desde acá —
+// puede causar un pequeño glitch visual en su próximo handoff de vuelta a este sector.
+// Coordinar bots entre los 3 procesos vía Redis sería la solución completa, pero excede
+// el alcance de este arreglo puntual.
+function startNextWave() {
+  cars.clear(); // limpia bots y cualquier humano que haya quedado (fantasma de la ronda anterior)
+  BOTS.forEach((b,i)=>{
+    const slot=gridSlot(i);
+    cars.set(b.id,{name:b.name,color:b.color,position:slot.position,speed:0,lane:slot.lane,isBot:true,targetSpd:b.targetSpd,ready:false});
+  });
+  raceStarted = false;
+  const toRelease = waitingQueue; waitingQueue = []; queueSince = null;
+  toRelease.forEach(p => placeOnGrid(p.carId, p.name, p.color, p.vectorClock));
+  console.log(`[Bots] Nueva ronda: ${toRelease.length} piloto(s) en cola pasan a la grilla`);
+  setTimeout(releaseBots, 5000);
+}
+
+// Revisa cada 2s si ya se puede arrancar la próxima ronda para los que están en cola:
+// se puede si no queda ningún humano corriendo la ronda actual, o si ya esperaron
+// demasiado (límite de seguridad para no dejar a alguien esperando para siempre por
+// un auto fantasma que nunca se desconectó bien).
+if (SECTOR_ID === 1) {
+  setInterval(() => {
+    if (waitingQueue.length === 0) return;
+    const humansActive = [...cars.values()].filter(c=>!c.isBot).length;
+    const waitedTooLong = queueSince && (Date.now()-queueSince > 45000);
+    if (humansActive === 0 || waitedTooLong) startNextWave();
+  }, 2000);
 }
 
 const lastCollision = {}; // enfriamiento por par de autos, evita el spam infinito
@@ -189,12 +234,16 @@ async function notifyGatewayHandoff(carId, target, attempt=1) {
 
 app.post('/car/register', (req,res) => {
   const {carId,name,color,vectorClock}=req.body;
-  // Grilla de salida tipo kart: el jugador ocupa el siguiente lugar en la fila,
-  // justo detrás de los bots, en vez de nacer suelto en un carril lejos de todos.
-  const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
-  const slot = gridSlot(BOTS.length + humanCount);
-  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,vectorClock,spawnUntil:Date.now()+4000});
-  console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${slot.lane}, pos ${slot.position})`);
+  // Si la carrera YA está en marcha, este piloto no entra al tráfico en vivo — espera
+  // en cola a que termine la ronda actual (todos los humanos se vayan o terminen) para
+  // arrancar sincronizado en la próxima, en vez de aparecer en medio de una carrera ajena.
+  if (raceStarted && SECTOR_ID===1) {
+    if (waitingQueue.length===0) queueSince = Date.now();
+    waitingQueue.push({carId,name,color,vectorClock});
+    console.log(`[S${SECTOR_ID}] Piloto ${name} en cola — esperando la próxima ronda (${waitingQueue.length} en cola)`);
+    return res.json({ok:true, queued:true});
+  }
+  placeOnGrid(carId, name, color, vectorClock);
   // Primera vez que llega un jugador real → contar 5s y soltar bots
   if (!playerJoined && SECTOR_ID===1) {
     playerJoined = true;
@@ -220,6 +269,9 @@ app.post('/car/command', (req,res) => {
 app.post('/car/remove', (req,res) => {
   const {carId} = req.body;
   const existed = cars.delete(carId);
+  const queuedBefore = waitingQueue.length;
+  waitingQueue = waitingQueue.filter(p => p.carId !== carId); // por si se fue mientras esperaba en cola
+  if (waitingQueue.length !== queuedBefore) console.log(`[S${SECTOR_ID}] ${carId} salió de la cola de espera`);
   Object.keys(lastCollision).forEach(k=>{if(k.includes(carId))delete lastCollision[k];});
   if(existed) console.log(`[S${SECTOR_ID}] ${carId} eliminado (desconectado)`);
   res.json({ok:true,existed});

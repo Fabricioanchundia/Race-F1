@@ -71,10 +71,12 @@ io.on('connection', (socket) => {
     players.set(socket.id, { carId, sectorId: 1, name: name || `Piloto_${carId}`, color, team });
     try {
       const { data } = await axios.post(`${SECTORS[1]}/car/register`, { carId, name, color, team, vectorClock: clock });
-      socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock, raceStarted: !!data.raceStarted });
-      await redisPub.publish('race:events', JSON.stringify({
-        type: 'PLAYER_JOINED', carId, name, color, team, sectorId: 1, vectorClock: clock, timestamp: Date.now()
-      }));
+      socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock, raceStarted: !!data.raceStarted, queued: !!data.queued });
+      if (!data.queued) {
+        await redisPub.publish('race:events', JSON.stringify({
+          type: 'PLAYER_JOINED', carId, name, color, team, sectorId: 1, vectorClock: clock, timestamp: Date.now()
+        }));
+      }
       console.log(`[Gateway] Auto ${carId} registrado | VC: [${clock}]`);
     } catch (err) {
       console.error(`[Gateway] Error: ${err.message}`);
