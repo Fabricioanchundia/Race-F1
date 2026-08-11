@@ -47,15 +47,15 @@ redisSub.on('message', (channel, raw) => {
 io.on('connection', (socket) => {
   console.log(`[Gateway] Cliente conectado: ${socket.id}`);
 
-  socket.on('player:join', async ({ name }) => {
+  socket.on('player:join', async ({ name, color, team }) => {
     const carId = uuidv4().slice(0, 6).toUpperCase();
     const clock = vc.tick();
-    players.set(socket.id, { carId, sectorId: 1, name: name || `Piloto_${carId}` });
+    players.set(socket.id, { carId, sectorId: 1, name: name || `Piloto_${carId}`, color, team });
     try {
-      await axios.post(`${SECTORS[1]}/car/register`, { carId, name, vectorClock: clock });
+      await axios.post(`${SECTORS[1]}/car/register`, { carId, name, color, team, vectorClock: clock });
       socket.emit('player:registered', { carId, sectorId: 1, vectorClock: clock });
       await redisPub.publish('race:events', JSON.stringify({
-        type: 'PLAYER_JOINED', carId, name, sectorId: 1, vectorClock: clock, timestamp: Date.now()
+        type: 'PLAYER_JOINED', carId, name, color, team, sectorId: 1, vectorClock: clock, timestamp: Date.now()
       }));
       console.log(`[Gateway] Auto ${carId} registrado | VC: [${clock}]`);
     } catch (err) {
@@ -86,6 +86,8 @@ io.on('connection', (socket) => {
     }));
     players.delete(socket.id);
     console.log(`[Gateway] Auto ${player.carId} desconectado`);
+    // Eliminar de verdad el auto en el sector donde esté (no dejar "fantasma" chocando/en la clasificación)
+    axios.post(`${SECTORS[player.sectorId]}/car/remove`, { carId: player.carId }).catch(()=>{});
   });
 });
 

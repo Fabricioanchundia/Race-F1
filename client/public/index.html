@@ -34,44 +34,55 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .cr{position:absolute;bottom:10px;font-size:.58rem;color:#181818;letter-spacing:.08em;}
 /* CIRCUIT SELECT */
 #cs{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;
-  justify-content:center;gap:14px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);}
-.ch1{font-size:1.4rem;font-weight:900;letter-spacing:.15em;text-shadow:0 0 20px rgba(225,6,0,.5);}
-.ch2{font-size:.68rem;color:#555;letter-spacing:.12em;}
-.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(680px,94vw);}
-.cc{background:rgba(6,4,22,.92);border:2px solid rgba(255,255,255,.07);border-radius:16px;
-  padding:16px 12px;text-align:center;cursor:pointer;transition:all .16s;
-  display:flex;flex-direction:column;align-items:center;gap:5px;}
-.cc:hover,.cc.active{border-color:#e10600;box-shadow:0 0 22px rgba(225,6,0,.4);transform:scale(1.04);}
-.cf{font-size:2.2rem;}.cn{font-size:1rem;font-weight:900;letter-spacing:.1em;}
-.ck{font-size:.57rem;color:#555;}.ci{font-size:.6rem;color:#777;background:rgba(255,255,255,.05);padding:3px 10px;border-radius:12px;}
-.cc canvas{border-radius:8px;border:1px solid rgba(255,255,255,.06);margin-top:4px;}
+  justify-content:center;gap:16px;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,10,.55),rgba(0,0,0,.82));backdrop-filter:blur(10px);}
+.ch1{font-size:1.55rem;font-weight:900;letter-spacing:.15em;text-shadow:0 0 24px rgba(225,6,0,.6);}
+.ch2{font-size:.68rem;color:#666;letter-spacing:.16em;margin-top:-8px;}
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:min(720px,94vw);
+  background:rgba(8,6,18,.55);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);}
+.cc{background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.08);border-radius:16px;
+  padding:18px 12px 14px;text-align:center;cursor:pointer;transition:all .2s cubic-bezier(.2,.8,.3,1);
+  display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden;}
+.cc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);transition:background .2s;}
+.cc:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18);box-shadow:0 12px 28px rgba(0,0,0,.45);}
+.cc.active{border-color:#e10600;box-shadow:0 0 0 1px rgba(225,6,0,.4),0 12px 32px rgba(225,6,0,.35);transform:translateY(-4px);}
+.cc.active::before{background:linear-gradient(90deg,#e10600,#ff6a30);}
+.cf{font-size:2.2rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}.cn{font-size:1.05rem;font-weight:900;letter-spacing:.1em;}
+.ck{font-size:.58rem;color:#666;letter-spacing:.02em;}
+.ci{font-size:.6rem;color:#999;background:rgba(255,255,255,.06);padding:3px 11px;border-radius:12px;margin-top:2px;}
+.cc canvas{border-radius:10px;border:1px solid rgba(255,255,255,.1);margin-top:6px;box-shadow:0 6px 16px rgba(0,0,0,.35);}
 /* SELECT */
 #sel{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;
-  justify-content:center;gap:10px;background:rgba(0,0,0,.62);backdrop-filter:blur(7px);}
-.sh{font-size:1.3rem;font-weight:900;letter-spacing:.14em;text-shadow:0 0 18px rgba(225,6,0,.5);}
-.sb{display:flex;gap:16px;align-items:flex-start;width:min(680px,94vw);}
-.sp{background:rgba(6,4,22,.92);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;
-  text-align:center;min-width:185px;max-width:185px;}
-.spr{flex:1;display:flex;flex-direction:column;gap:8px;}
-.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
-.tc{background:rgba(6,4,22,.9);border:2px solid rgba(255,255,255,.07);border-radius:12px;
-  padding:8px 6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
-.tc:hover,.tc.active{border-color:var(--c);box-shadow:0 0 16px var(--c);transform:scale(1.04);}
-.tc canvas{display:block;margin:0 auto 4px;border-radius:8px;}
-.ta{font-weight:900;font-size:.88rem;margin-bottom:1px;}
-.tn{font-size:.55rem;color:#555;}
-.tk{position:absolute;top:4px;right:7px;font-size:1rem;display:none;}
+  justify-content:center;gap:12px;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,10,.55),rgba(0,0,0,.85));backdrop-filter:blur(10px);}
+.sh{font-size:1.45rem;font-weight:900;letter-spacing:.14em;text-shadow:0 0 22px rgba(225,6,0,.55);}
+.sb{display:flex;gap:18px;align-items:flex-start;width:min(720px,94vw);
+  background:rgba(8,6,18,.55);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);}
+.sp{background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:18px;
+  text-align:center;min-width:185px;max-width:185px;box-shadow:0 10px 26px rgba(0,0,0,.4);}
+.spr{flex:1;display:flex;flex-direction:column;gap:9px;}
+.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+.tc{background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.08);border-radius:13px;
+  padding:9px 6px 7px;text-align:center;cursor:pointer;transition:all .18s cubic-bezier(.2,.8,.3,1);position:relative;}
+.tc:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2);}
+.tc.active{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 8px 20px -4px var(--c);transform:translateY(-3px);}
+.tc canvas{display:block;margin:0 auto 5px;border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,.35);}
+.ta{font-weight:900;font-size:.9rem;margin-bottom:1px;letter-spacing:.03em;}
+.tn{font-size:.55rem;color:#666;}
+.tk{position:absolute;top:5px;right:8px;font-size:1rem;display:none;filter:drop-shadow(0 0 4px currentColor);}
 .tc.active .tk{display:block;}
-.ni{width:100%;padding:11px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.65);color:#fff;font-size:1rem;outline:none;text-align:center;}
-.ni:focus{border-color:#e10600;}
-.gb{width:100%;padding:15px;background:linear-gradient(135deg,#e10600,#ff3020);color:#fff;
-  border:none;border-radius:12px;font-size:.95rem;font-weight:bold;letter-spacing:.2em;cursor:pointer;
-  box-shadow:0 4px 24px rgba(225,6,0,.5);}
+.ni{width:100%;padding:12px;border-radius:11px;border:1.5px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.55);color:#fff;font-size:1rem;outline:none;text-align:center;transition:border-color .15s;}
+.ni:focus{border-color:#e10600;background:rgba(0,0,0,.7);}
+.gb{width:100%;padding:16px;background:linear-gradient(135deg,#e10600,#ff3020);color:#fff;
+  border:none;border-radius:13px;font-size:.95rem;font-weight:bold;letter-spacing:.2em;cursor:pointer;
+  box-shadow:0 6px 26px rgba(225,6,0,.5);transition:transform .12s,box-shadow .12s;}
+.gb:hover{box-shadow:0 8px 30px rgba(225,6,0,.65);}
 .gb:active{transform:scale(.97);}
-.bk{background:none;border:1px solid rgba(255,255,255,.1);color:#444;padding:6px 16px;
-  border-radius:8px;cursor:pointer;font-size:.74rem;align-self:flex-end;}
-.gpst{font-size:.62rem;padding:4px 12px;border-radius:16px;border:1px solid #1a1a1a;color:#333;}
+.bk{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);color:#666;padding:7px 16px;
+  border-radius:9px;cursor:pointer;font-size:.74rem;align-self:flex-end;transition:all .15s;}
+.bk:hover{color:#aaa;border-color:rgba(255,255,255,.2);}
+.gpst{font-size:.62rem;padding:5px 12px;border-radius:16px;border:1px solid #1a1a1a;color:#444;text-align:center;}
 .gpst.ok{border-color:#27ae60;color:#27ae60;}
 /* HUD */
 #hud{position:fixed;inset:0;display:none;pointer-events:none;z-index:50;}
@@ -133,9 +144,10 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .pmb{width:100%;padding:12px;border:none;border-radius:10px;font-size:.87rem;font-weight:bold;letter-spacing:.1em;cursor:pointer;margin-bottom:9px;}
 .pmb.g{background:#27ae60;color:#fff;}.pmb.d{background:rgba(255,255,255,.07);color:#666;border:1px solid rgba(255,255,255,.1);}
 /* CONTROLS */
-#ctl{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);display:none;z-index:60;
-  pointer-events:all;grid-template-columns:1fr 1.2fr 1fr;grid-template-rows:1fr 1fr;gap:7px;width:min(262px,76vw);}
-.btn{border:none;border-radius:12px;font-size:1.3rem;cursor:pointer;padding:13px 0;user-select:none;}
+#ctl{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);display:none;z-index:250;
+  pointer-events:all;grid-template-columns:1fr 1.2fr 1fr;grid-template-rows:1fr 1fr;gap:7px;width:min(262px,76vw);
+  filter:drop-shadow(0 4px 18px rgba(0,0,0,.6));}
+.btn{border:2px solid rgba(255,255,255,.35);border-radius:12px;font-size:1.3rem;cursor:pointer;padding:13px 0;user-select:none;}
 .btn:active,.btn.pr{transform:scale(.86);filter:brightness(.45);}
 #bA{background:rgba(225,6,0,.85);grid-column:2;grid-row:1;}
 #bB{background:rgba(30,30,50,.9);grid-column:2;grid-row:2;}
@@ -286,17 +298,24 @@ function drawMiniCircuit(canvasId,ci){
   // Grass
   c.fillStyle=`rgb(${CR.grass.map(x=>Math.round(x*255)).join(',')})`;
   c.fillRect(0,H*.4,W,H*.6);
+  // Traza la forma REAL de este circuito (misma fórmula que la pista 3D)
+  const shapePts=[];for(let i=0;i<=64;i++){const p=trackXZ(i/64,ci);shapePts.push(p);}
+  const maxR=Math.max(...shapePts.map(p=>Math.hypot(p.x,p.z)))||1;
+  const scale=Math.min(rx,ry)/maxR*1.05;
+  const pathFn=(off)=>{c.beginPath();shapePts.forEach((p,i)=>{
+    const px=cx+p.x*scale*(1+off/40),py=cy+p.z*scale*(1+off/40)*(ry/rx);
+    i===0?c.moveTo(px,py):c.lineTo(px,py);});c.closePath();};
   // Track outer (kerbs)
-  c.strokeStyle='#cc1111';c.lineWidth=14;c.beginPath();c.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);c.stroke();
+  c.strokeStyle='#cc1111';c.lineWidth=6;pathFn(2);c.stroke();
   // Track
-  c.strokeStyle='#181828';c.lineWidth=10;c.beginPath();c.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);c.stroke();
+  c.strokeStyle='#181828';c.lineWidth=4;pathFn(0);c.stroke();
   // Crowd band
-  c.strokeStyle=CR.crowd[0];c.lineWidth=4;
-  c.beginPath();c.ellipse(cx,cy,rx+9,ry+9,0,0,Math.PI*2);c.stroke();
+  c.strokeStyle=CR.crowd[0];c.lineWidth=2.5;pathFn(6);c.stroke();
   // Sector markers
-  c.fillStyle='#27ae60';c.beginPath();c.arc(cx+rx,cy,3.5,0,Math.PI*2);c.fill();
-  c.fillStyle='#3498db';c.beginPath();c.arc(cx,cy+ry,3.5,0,Math.PI*2);c.fill();
-  c.fillStyle='#fff';c.beginPath();c.arc(cx+rx,cy,2,0,Math.PI*2);c.fill();
+  const s1=shapePts[Math.floor(64*.0)],s2=shapePts[Math.floor(64*.33)],s3=shapePts[Math.floor(64*.66)];
+  c.fillStyle='#fff';c.beginPath();c.arc(cx+s1.x*scale,cy+s1.z*scale*(ry/rx),2.4,0,Math.PI*2);c.fill();
+  c.fillStyle='#27ae60';c.beginPath();c.arc(cx+s2.x*scale,cy+s2.z*scale*(ry/rx),2.4,0,Math.PI*2);c.fill();
+  c.fillStyle='#3498db';c.beginPath();c.arc(cx+s3.x*scale,cy+s3.z*scale*(ry/rx),2.4,0,Math.PI*2);c.fill();
   c.fillStyle=`rgb(${CR.sky2.map(x=>Math.round(x*255*.7)).join(',')})`;
   c.font='bold 9px Segoe UI';c.textAlign='center';
   c.fillText(CIRCS[ci].name,cx,H-5);
@@ -365,15 +384,15 @@ scene.clearColor=new BABYLON.Color4(.29,.62,.88,1);
 
 function setLoad(p,t){g('ldf').style.width=p+'%';g('ldt').textContent=t;}
 
-// Camera: FollowCamera — sigue automáticamente al lockedTarget (AbstractMesh)
-const camera=new BABYLON.FollowCamera('cam',new BABYLON.Vector3(88,14,-22),scene);
-camera.radius=18; camera.heightOffset=9; camera.rotationOffset=0;
-camera.cameraAcceleration=0.12; camera.maxCameraSpeed=30;
+// Camera: UniversalCamera controlada manualmente (posición calculada cada cuadro nosotros mismos —
+// nada de comportamiento automático "mágico" que pueda fallar sin que lo veamos)
+const camera=new BABYLON.UniversalCamera('cam',new BABYLON.Vector3(88,14,-22),scene);
 camera.minZ=0.1; camera.maxZ=1200;
-// Dummy mesh para la órbita cinemática
+camera.fov=0.9;
+// Dummy mesh para la órbita cinemática del menú
 const _orbT=BABYLON.MeshBuilder.CreateSphere('oT',{diameter:.1},scene);
 _orbT.isVisible=false;_orbT.position.set(0,8,0);
-camera.lockedTarget=_orbT; // inicia apuntando al centro
+let myTangent=null; // tangente de la pista en la posición del jugador (para orientar la cámara detrás del auto)
 
 setLoad(10,'Luces...');
 const hemi=new BABYLON.HemisphericLight('h',new BABYLON.Vector3(0,1,0),scene);
@@ -390,25 +409,106 @@ scene.clearColor=new BABYLON.Color4(.29,.62,.88,1);
 setLoad(30,'Terreno...');
 const ground=BABYLON.MeshBuilder.CreateGround('g',{width:600,height:600,subdivisions:2},scene);
 const gm=new BABYLON.StandardMaterial('gm',scene);
-gm.diffuseColor=new BABYLON.Color3(.18,.63,.12);gm.specularColor=new BABYLON.Color3(.01,.02,.01);
+// Textura tipo "vista aérea": césped cerca del circuito, ciudad/estacionamientos alrededor
+// (como en un aeropuerto real de F1 visto desde arriba — no solo pasto infinito)
+const groundTex=new BABYLON.DynamicTexture('groundTex',{width:1024,height:1024},scene);
+(function paintGround(){
+  const c=groundTex.getContext(),W=1024,H=1024,cx=W/2,cy=H/2;
+  const innerR=300; // radio verde alrededor del circuito (en px de textura)
+  // Fondo urbano base (asfalto/tierra)
+  c.fillStyle='#6b6d5f';c.fillRect(0,0,W,H);
+  // Manzanas de ciudad: cuadrícula de calles + edificios/parkings
+  const cell=64;
+  for(let gx=0;gx<W;gx+=cell){
+    for(let gy=0;gy<H;gy+=cell){
+      const dx=gx-cx,dy=gy-cy,d=Math.hypot(dx,dy);
+      if(d<innerR) continue; // dentro del círculo verde, no dibujar ciudad
+      // calle (borde de cada manzana)
+      c.fillStyle='#8a8a86';c.fillRect(gx,gy,cell,cell);
+      const pad=6,bw=cell-pad*2,bh=cell-pad*2;
+      const r=Math.random();
+      if(r<0.55){ // edificio/techo
+        const g=40+Math.floor(Math.random()*50);
+        c.fillStyle=`rgb(${g},${g},${g+4})`;
+        c.fillRect(gx+pad,gy+pad,bw,bh);
+      } else if(r<0.8){ // estacionamiento con líneas
+        c.fillStyle='#555550';c.fillRect(gx+pad,gy+pad,bw,bh);
+        c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=1;
+        for(let lx=gx+pad+4;lx<gx+pad+bw;lx+=6){c.beginPath();c.moveTo(lx,gy+pad);c.lineTo(lx,gy+pad+bh);c.stroke();}
+      } else { // zona verde/parque pequeño
+        c.fillStyle='#3f7a2e';c.fillRect(gx+pad,gy+pad,bw,bh);
+      }
+    }
+  }
+  // Césped del circuito (círculo suave, con degradado hacia la ciudad)
+  const grad=c.createRadialGradient(cx,cy,innerR*0.55,cx,cy,innerR);
+  grad.addColorStop(0,'#1f8a1f');grad.addColorStop(1,'rgba(31,138,31,0)');
+  c.fillStyle=grad;c.beginPath();c.arc(cx,cy,innerR,0,Math.PI*2);c.fill();
+  c.fillStyle='#1f8a1f';c.beginPath();c.arc(cx,cy,innerR*0.6,0,Math.PI*2);c.fill();
+})();
+groundTex.update();
+gm.diffuseTexture=groundTex;gm.specularColor=new BABYLON.Color3(.01,.02,.01);
 ground.material=gm;ground.receiveShadows=true;
 
 // ── TRACK CONSTANTS ──────────────────────────────────────────
-const TX=88,TY=44,RW_H=7,KW=1.8,SEGS=120;
-function TP(t){const a=t*Math.PI*2;const x=Math.cos(a)*TX,z=Math.sin(a)*TY;
-  const dtx=-Math.sin(a)*TX,dtz=Math.cos(a)*TY,len=Math.hypot(dtx,dtz);
+const RW_H=7,KW=1.8,SEGS=120;
+let curCircuit=0; // 0=Silverstone 1=Monza 2=Monaco — cambia la FORMA real de la pista
+// Forma (x,z) de cada circuito, en función de t (0..1) y del circuito elegido
+function trackXZ(t,ci){
+  const a=t*Math.PI*2;
+  if(ci===1){ // MONZA — óvalo largo y veloz, rectas grandes
+    return{x:Math.cos(a)*102,z:Math.sin(a)*34};
+  }
+  if(ci===2){ // MONACO — trazado estrecho, muchas curvas en S
+    const r=44+9*Math.cos(2*a)+5*Math.sin(5*a);
+    return{x:Math.cos(a)*r,z:Math.sin(a)*r*0.86};
+  }
+  // SILVERSTONE (default) — triángulo redondeado con 3 curvas grandes
+  const r=62+17*Math.cos(3*a);
+  return{x:Math.cos(a)*r,z:Math.sin(a)*r*0.8};
+}
+function TP(t){
+  const ci=curCircuit;
+  const eps=0.0015;
+  const t0=((t-eps)%1+1)%1,t1=((t+eps)%1+1)%1;
+  const p0=trackXZ(t0,ci),p1=trackXZ(t1,ci),cur=trackXZ(((t%1)+1)%1,ci);
+  let dtx=p1.x-p0.x,dtz=p1.z-p0.z;const len=Math.hypot(dtx,dtz)||1;
   const ttx=dtx/len,ttz=dtz/len,nx=-ttz,nz=ttx;
-  return{x,z,ttx,ttz,nx,nz,angle:Math.atan2(-ttz,ttx)};}
+  return{x:cur.x,z:cur.z,ttx,ttz,nx,nz,angle:Math.atan2(-ttz,ttx)};
+}
+// Forma SUAVE para el estadio (siempre ovalada, sin picos) — evita que las gradas
+// se plieguen sobre sí mismas en las curvas cerradas del circuito real.
+function stadiumXZ(t,ci){
+  const a=t*Math.PI*2;
+  if(ci===1) return{x:Math.cos(a)*118,z:Math.sin(a)*50}; // Monza: óvalo ancho
+  if(ci===2) return{x:Math.cos(a)*66,z:Math.sin(a)*62};  // Monaco: casi circular
+  return{x:Math.cos(a)*82,z:Math.sin(a)*70};              // Silverstone: ovalado suave
+}
+function SP(t){
+  const ci=curCircuit;
+  const eps=0.0015;
+  const t0=((t-eps)%1+1)%1,t1=((t+eps)%1+1)%1;
+  const p0=stadiumXZ(t0,ci),p1=stadiumXZ(t1,ci),cur=stadiumXZ(((t%1)+1)%1,ci);
+  let dtx=p1.x-p0.x,dtz=p1.z-p0.z;const len=Math.hypot(dtx,dtz)||1;
+  const ttx=dtx/len,ttz=dtz/len,nx=-ttz,nz=ttx;
+  return{x:cur.x,z:cur.z,ttx,ttz,nx,nz,angle:Math.atan2(-ttz,ttx)};
+}
 
 setLoad(50,'Pista...');
-(function buildTrack(){
+let trackNodes=[],stadiumNodes=[],stadiumLights=[],cityNodes=[];
+// ── Materiales/texturas compartidos (deben existir ANTES de construir pista/estadio/ciudad) ──
+const SHARED={};
+function SM(key,createFn){if(!SHARED[key])SHARED[key]=createFn();return SHARED[key];}
+
+function buildTrack(){
+  const _meshBefore=scene.meshes.slice();
   const C3=BABYLON.Color3;
   // Asphalt texture
   const at=new BABYLON.DynamicTexture('at',{width:512,height:512},scene);
-  const ax=at.getContext();ax.fillStyle='#1a1a28';ax.fillRect(0,0,512,512);
-  for(let i=0;i<5000;i++){const v=Math.floor(Math.random()*22+10);ax.fillStyle=`rgb(${v},${v},${v+5})`;ax.fillRect(Math.random()*512,Math.random()*512,1.5,1);}
+  const ax=at.getContext();ax.fillStyle='#33333e';ax.fillRect(0,0,512,512);
+  for(let i=0;i<5000;i++){const v=Math.floor(Math.random()*28+38);ax.fillStyle=`rgb(${v},${v},${v+6})`;ax.fillRect(Math.random()*512,Math.random()*512,1.5,1);}
   at.update();at.vScale=20;
-  const rm=new BABYLON.StandardMaterial('rm',scene);rm.diffuseTexture=at;rm.specularColor=new C3(.03,.03,.05);
+  const rm=new BABYLON.StandardMaterial('rm',scene);rm.diffuseTexture=at;rm.specularColor=new C3(.05,.05,.08);rm.emissiveColor=new C3(.05,.05,.06);
   const km=new BABYLON.StandardMaterial('km',scene);
   const kt=new BABYLON.DynamicTexture('kt',{width:256,height:32},scene);
   const kx=kt.getContext();for(let i=0;i<16;i++){kx.fillStyle=i%2===0?'#dd1010':'#f0f0f0';kx.fillRect(i*16,0,16,32);}
@@ -423,13 +523,27 @@ setLoad(50,'Pista...');
   BABYLON.MeshBuilder.CreateRibbon('road',{pathArray:[ri,ro],closePath:true},scene).material=rm;
   BABYLON.MeshBuilder.CreateRibbon('lk',{pathArray:[li,lo],closePath:true},scene).material=km;
   BABYLON.MeshBuilder.CreateRibbon('rk',{pathArray:[ri2,ro2],closePath:true},scene).material=km;
+  // Run-off pintado (zona de escape asfaltada, como en un circuito real — no solo pasto)
+  const roTex=SM('roTex',()=>{
+    const t=new BABYLON.DynamicTexture('roTex',{width:256,height:256},scene);const c=t.getContext();
+    c.fillStyle='#5a5a52';c.fillRect(0,0,256,256);
+    for(let i=0;i<1800;i++){const v=70+Math.floor(Math.random()*24);c.fillStyle=`rgb(${v},${v},${v-6})`;c.fillRect(Math.random()*256,Math.random()*256,1.4,1.4);}
+    t.update();t.uScale=16;return t;});
+  const rom=new BABYLON.StandardMaterial('rom',scene);rom.diffuseTexture=roTex;rom.specularColor=new C3(0,0,0);
+  const RO_W=6.5,rfi=[],rfo=[],rfi2=[],rfo2=[];
+  for(let i=0;i<=SEGS;i++){const info=TP(i/SEGS);const{x,z,nx,nz}=info,d0=RW_H+KW;
+    rfi.push(new BABYLON.Vector3(x-nx*(d0+RO_W),.01,z-nz*(d0+RO_W)));rfo.push(new BABYLON.Vector3(x-nx*d0,.01,z-nz*d0));
+    rfi2.push(new BABYLON.Vector3(x+nx*d0,.01,z+nz*d0));rfo2.push(new BABYLON.Vector3(x+nx*(d0+RO_W),.01,z+nz*(d0+RO_W)));
+  }
+  BABYLON.MeshBuilder.CreateRibbon('rol',{pathArray:[rfi,rfo],closePath:true},scene).material=rom;
+  BABYLON.MeshBuilder.CreateRibbon('ror',{pathArray:[rfi2,rfo2],closePath:true},scene).material=rom;
   // Barriers
   const bm=new BABYLON.StandardMaterial('bm',scene);bm.diffuseColor=new C3(.8,.8,.88);
   const bt=new BABYLON.MeshBuilder.CreateBox('bt',{width:.38,height:1.1,depth:5.6},scene);
   bt.material=bm;bt.isVisible=false;
   const sm=new BABYLON.StandardMaterial('sm2',scene);sm.diffuseColor=new C3(1,.78,0);sm.emissiveColor=new C3(.25,.18,0);
   const st2=BABYLON.MeshBuilder.CreateBox('st2',{width:.39,height:.18,depth:5.62},scene);st2.material=sm;st2.isVisible=false;
-  const BOFF=RW_H+KW+.8;
+  const BOFF=RW_H+KW+RO_W+.8;
   for(let i=0;i<80;i++){const info=TP(i/80);[-1,1].forEach(sd=>{
     const bx=info.x+info.nx*sd*BOFF,bz=info.z+info.nz*sd*BOFF;
     const b=bt.createInstance('b'+i+'_'+sd);b.position.set(bx,.55,bz);b.rotation.y=info.angle+Math.PI/2;b.receiveShadows=true;shadowGen.addShadowCaster(b);
@@ -441,6 +555,15 @@ setLoad(50,'Pista...');
     const mm=new BABYLON.StandardMaterial('mm'+t,scene);mm.diffuseColor=col;mm.emissiveColor=col.scale(.3);
     m.material=mm;m.position.set(info.x,0.06,info.z);m.rotation.y=info.angle+Math.PI/2;
   });
+  // Vallas publicitarias de patrocinadores (colores sólidos — sin texturas, cero riesgo de glitch visual)
+  const adColors=[new C3(.88,.02,0),new C3(0,.2,.63),new C3(.11,.11,.11),new C3(1,.48,0),new C3(.04,.48,.24)];
+  const adMats=adColors.map((col,idx)=>{const m=new BABYLON.StandardMaterial('adm'+idx,scene);m.diffuseColor=col;m.emissiveColor=col.scale(.35);m.specularColor=new C3(0,0,0);return m;});
+  const AOFF=BOFF+1.3;
+  for(let i=0;i<24;i++){const info=TP(i/24);[-1,1].forEach(sd=>{
+    const ax=info.x+info.nx*sd*AOFF,az=info.z+info.nz*sd*AOFF;
+    const ad=BABYLON.MeshBuilder.CreateBox('ad'+i+'_'+sd,{width:4.4,height:1.1,depth:.12},scene);
+    ad.material=adMats[i%adMats.length];ad.position.set(ax,1.1,az);ad.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(ad);
+  });}
   // Light poles
   const pm=new BABYLON.StandardMaterial('pm',scene);pm.diffuseColor=new C3(.55,.55,.58);
   const fm=new BABYLON.StandardMaterial('fm',scene);fm.emissiveColor=new C3(1,.95,.75);fm.disableLighting=true;
@@ -452,42 +575,90 @@ setLoad(50,'Pista...');
     const f=BABYLON.MeshBuilder.CreateBox('f'+i+'_'+sd,{width:2.2,height:.28,depth:.38},scene);
     f.material=fm;f.position.set(px,12.2,pz);f.rotation.y=info.angle+Math.PI/2;
   });}
-})();
+  trackNodes=scene.meshes.filter(m=>!_meshBefore.includes(m));
+}
+
+// ── CIUDAD 3D alrededor del estadio (edificios de verdad, no solo textura) ──
+function buildCity(){
+  const _meshBefore=scene.meshes.slice();
+  const C3=BABYLON.Color3;
+  const bMat=SM('bldMat',()=>{const m=new BABYLON.StandardMaterial('bldMat',scene);m.diffuseColor=new C3(.5,.5,.55);m.specularColor=new C3(.1,.1,.12);return m;});
+  const winMat=SM('winMat',()=>{const m=new BABYLON.StandardMaterial('winMat',scene);m.emissiveColor=new C3(.9,.85,.4);m.diffuseColor=new C3(.1,.1,.05);return m;});
+  const N=78,ringR1=170,ringR2=290; // anillo de edificios más allá del estadio (más denso)
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2+Math.random()*.15;
+    const r=ringR1+Math.random()*(ringR2-ringR1);
+    const x=Math.cos(a)*r,z=Math.sin(a)*r*0.92;
+    const w=6+Math.random()*7,d=6+Math.random()*7,h=6+Math.random()*22;
+    const bld=BABYLON.MeshBuilder.CreateBox('bld'+i,{width:w,height:h,depth:d},scene);
+    const g=.38+Math.random()*.3;
+    const mat=new BABYLON.StandardMaterial('bm'+i,scene);mat.diffuseColor=new C3(g,g,g+.04);mat.specularColor=new C3(.08,.08,.1);
+    bld.material=mat;bld.position.set(x,h/2,z);bld.rotation.y=Math.random()*Math.PI*2;
+    shadowGen.addShadowCaster(bld);
+    // ventanitas iluminadas (textura simple con emissive puntos)
+    if(Math.random()<0.7){
+      const wTex=SM('wTex',()=>{
+        const t=new BABYLON.DynamicTexture('wTex',{width:64,height:128},scene);const c=t.getContext();
+        c.fillStyle='#2a2a30';c.fillRect(0,0,64,128);
+        for(let wy=6;wy<122;wy+=12)for(let wx=6;wx<58;wx+=14){c.fillStyle=Math.random()<0.55?'#ffe066':'#15151a';c.fillRect(wx,wy,7,8);}
+        t.update();return t;});
+      mat.emissiveTexture=wTex;mat.diffuseTexture=wTex;
+    }
+  }
+  cityNodes=scene.meshes.filter(m=>!_meshBefore.includes(m));
+}
 
 setLoad(70,'Estadio...');
-(function buildStadium(){
-  // RIBBON MESH STADIUM — gradas continuas siguiendo el óvalo
+function buildStadium(){
+  // RIBBON MESH STADIUM — gradas continuas siguiendo la forma del circuito
+  const _meshBefore=scene.meshes.slice(),_lightBefore=scene.lights.slice();
   const C3=BABYLON.Color3;
   const ROWS=14,ROW_H=1.65,ROW_D=1.45;
   const BOFF2=RW_H+KW+.8+2.5; // just outside barriers
-  const CROWD_COLS=CIRCS[0].crowd; // use Silverstone default
+  const CROWD_COLS=CIRCS[curCircuit].crowd; // colores del circuito elegido, no siempre Silverstone
+  // Textura de PÚBLICO real: cabecitas de colores variados (no solo franjas planas)
+  const crowdTex=new BABYLON.DynamicTexture('crowdTex_'+curCircuit+'_'+Date.now(),{width:512,height:128},scene);
+  (function paintCrowd(){
+    const cx=crowdTex.getContext();
+    cx.fillStyle='#12121a';cx.fillRect(0,0,512,128);
+    const skin=['#e8b88a','#c68642','#8d5524','#ffdbac','#f1c27d','#7a4a2b'];
+    for(let i=0;i<900;i++){
+      const x=Math.random()*512,y=14+Math.random()*100;
+      const useTeam=Math.random()<0.5;
+      cx.fillStyle=useTeam?CROWD_COLS[Math.floor(Math.random()*CROWD_COLS.length)]:skin[Math.floor(Math.random()*skin.length)];
+      cx.beginPath();cx.arc(x,y,3.2+Math.random()*1.4,0,Math.PI*2);cx.fill();
+      // sombrerito/torso debajo de cada cabeza para dar volumen
+      cx.fillStyle='rgba(0,0,0,.35)';cx.fillRect(x-2.2,y+3,4.4,5);
+    }
+  })();
+  crowdTex.update();crowdTex.wrapU=BABYLON.Texture.WRAP_ADDRESSMODE;crowdTex.uScale=26;crowdTex.vScale=1;
 
   // Concrete base path (1 ring)
   const basePaths=[[],[]];
-  // Build tier ribbons
+  // Build tier ribbons — cada fila es un ESCALÓN real: contrahuella (vertical) + huella (horizontal)
   for(let row=0;row<ROWS;row++){
     const d0=BOFF2+row*ROW_D;
-    const fp=[],bp=[];
-    for(let i=0;i<=SEGS;i++){const info=TP(i/SEGS);
+    const p0=[],p1=[],p2=[]; // p0=abajo-dentro, p1=arriba-dentro (contrahuella), p2=arriba-fuera (huella)
+    for(let i=0;i<=SEGS;i++){const info=SP(i/SEGS);
       const ox=-info.nx,oz=-info.nz; // outward
-      fp.push(new BABYLON.Vector3(info.x+ox*d0,row*ROW_H,info.z+oz*d0));
-      bp.push(new BABYLON.Vector3(info.x+ox*(d0+ROW_D),row*ROW_H,info.z+oz*(d0+ROW_D)));
+      p0.push(new BABYLON.Vector3(info.x+ox*d0,row*ROW_H,info.z+oz*d0));
+      p1.push(new BABYLON.Vector3(info.x+ox*d0,(row+1)*ROW_H,info.z+oz*d0));
+      p2.push(new BABYLON.Vector3(info.x+ox*(d0+ROW_D),(row+1)*ROW_H,info.z+oz*(d0+ROW_D)));
     }
-    const tier=BABYLON.MeshBuilder.CreateRibbon('tier'+row,{pathArray:[fp,bp],closePath:true,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene);
+    const tier=BABYLON.MeshBuilder.CreateRibbon('tier'+row,{pathArray:[p0,p1,p2],closePath:true,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene);
     const tm=new BABYLON.StandardMaterial('tm'+row,scene);
     if(row===0){tm.diffuseColor=new C3(.72,.72,.76);tm.specularColor=new C3(.06,.06,.07);}
     else if(row===1){tm.diffuseColor=new C3(0,.28,.8);tm.emissiveColor=new C3(0,.04,.12);}
     else{
-      // Crowd color (alternating)
-      const hx=CROWD_COLS[(row+1)%CROWD_COLS.length];
-      tm.diffuseColor=C3.FromHexString(hx);tm.emissiveColor=C3.FromHexString(hx).scale(.1);
-      tm.specularColor=new C3(0,0,0);
+      // PÚBLICO: textura de gente, no franjas planas de color
+      tm.diffuseTexture=crowdTex;tm.specularColor=new C3(0,0,0);
+      tm.emissiveTexture=crowdTex;tm.emissiveColor=new C3(.22,.22,.22);
     }
-    tier.material=tm;tier.receiveShadows=true;
+    tier.material=tm;tier.receiveShadows=true;shadowGen.addShadowCaster(tier);
   }
   // Roof
   const roofY=ROWS*ROW_H+2.2,ri2=[],ro2=[];
-  for(let i=0;i<=SEGS;i++){const info=TP(i/SEGS);const ox=-info.nx,oz=-info.nz;
+  for(let i=0;i<=SEGS;i++){const info=SP(i/SEGS);const ox=-info.nx,oz=-info.nz;
     ri2.push(new BABYLON.Vector3(info.x+ox*(BOFF2+2),roofY+2,info.z+oz*(BOFF2+2)));
     ro2.push(new BABYLON.Vector3(info.x+ox*(BOFF2+ROWS*ROW_D+3.5),roofY,info.z+oz*(BOFF2+ROWS*ROW_D+3.5)));
   }
@@ -496,7 +667,7 @@ setLoad(70,'Estadio...');
   roof.material=rfm;roof.receiveShadows=true;shadowGen.addShadowCaster(roof);
   // Stadium flood lights
   const flm=new BABYLON.StandardMaterial('flm',scene);flm.diffuseColor=new C3(.52,.52,.54);
-  for(let p=0;p<10;p++){const info=TP(p/10);const ox=-info.nx,oz=-info.nz;
+  for(let p=0;p<10;p++){const info=SP(p/10);const ox=-info.nx,oz=-info.nz;
     const lpx=info.x+ox*(BOFF2+ROWS*ROW_D+5),lpz=info.z+oz*(BOFF2+ROWS*ROW_D+5);
     const pole=BABYLON.MeshBuilder.CreateCylinder('fl'+p,{diameter:.65,height:26,tessellation:8},scene);
     pole.material=flm;pole.position.set(lpx,13,lpz);shadowGen.addShadowCaster(pole);
@@ -504,7 +675,7 @@ setLoad(70,'Estadio...');
     sl.intensity=.65;sl.range=85;sl.diffuse=new C3(1,.95,.8);
   }
   // Scoreboard
-  const pInfo=TP(.01),ox2=-pInfo.nx,oz2=-pInfo.nz;
+  const pInfo=SP(.01),ox2=-pInfo.nx,oz2=-pInfo.nz;
   const pDist=BOFF2+ROWS*ROW_D+7;
   const px=pInfo.x+ox2*pDist,pz=pInfo.z+oz2*pDist;
   const pRot=pInfo.angle+Math.PI/2;
@@ -515,14 +686,32 @@ setLoad(70,'Estadio...');
   const txm=new BABYLON.StandardMaterial('txm',scene);txm.emissiveColor=new C3(.95,.1,.0);txm.diffuseColor=new C3(0,0,0);
   const txb=BABYLON.MeshBuilder.CreateBox('txb',{width:22,height:3.6,depth:.7},scene);txb.material=txm;txb.position.set(px,16,pz);txb.rotation.y=pRot;
   shadowGen.addShadowCaster(sb2);
-})();
+  stadiumNodes=scene.meshes.filter(m=>!_meshBefore.includes(m));
+  stadiumLights=scene.lights.filter(l=>!_lightBefore.includes(l));
+}
+buildTrack();
+buildStadium();
+buildCity();
+
+// Reconstruye pista + estadio con la forma/colores del circuito elegido
+function disposeCircuitMeshes(){
+  [...trackNodes,...stadiumNodes].forEach(m=>{try{m.dispose();}catch(e){}});
+  stadiumLights.forEach(l=>{try{l.dispose();}catch(e){}});
+  trackNodes=[];stadiumNodes=[];stadiumLights=[];
+}
+function rebuildCircuit(ci){
+  try{
+    curCircuit=ci;
+    disposeCircuitMeshes();
+    buildTrack();
+    buildStadium();
+  }catch(e){console.error('Error reconstruyendo circuito:',e);}
+}
 
 setLoad(85,'Autos...');
 
 // ── CAR CREATION (simple y garantizado) ─────────────────────
 const C3=BABYLON.Color3;
-const SHARED={};
-function SM(key,createFn){if(!SHARED[key])SHARED[key]=createFn();return SHARED[key];}
 
 function makeCar(hexCol){
   // ROOT = esfera invisible (AbstractMesh) → FollowCamera.lockedTarget funciona
@@ -530,10 +719,13 @@ function makeCar(hexCol){
   root.isVisible=false; root.isPickable=false;
   const col=(typeof hexCol==='string'&&hexCol.startsWith('#'))?hexCol:'#888888';
   const bm=new BABYLON.StandardMaterial('bm_'+root.name,scene);
-  bm.diffuseColor=C3.FromHexString(col);bm.specularColor=new C3(.8,.8,.9);bm.specularPower=80;
+  bm.diffuseColor=C3.FromHexString(col);bm.specularColor=new C3(1,1,1);bm.specularPower=140;
+  bm.emissiveColor=C3.FromHexString(col).scale(.12); // pintura con más "pop", estilo juguete
   const dk=SM('dk',()=>{const m=new BABYLON.StandardMaterial('dk',scene);m.diffuseColor=new C3(.04,.04,.1);m.specularColor=new C3(0,0,0);return m;});
   const tr=SM('tr',()=>{const m=new BABYLON.StandardMaterial('tr',scene);m.diffuseColor=new C3(.07,.07,.07);m.specularColor=new C3(.02,.02,.02);return m;});
   const rm2=SM('rm2',()=>{const m=new BABYLON.StandardMaterial('rm2',scene);m.diffuseColor=new C3(.4,.4,.45);m.specularColor=new C3(.8,.8,.85);m.specularPower=120;return m;});
+  const skinM=SM('skin',()=>{const m=new BABYLON.StandardMaterial('skin',scene);m.diffuseColor=new C3(.85,.62,.45);m.specularColor=new C3(.1,.1,.1);return m;});
+  const visorM=SM('visor',()=>{const m=new BABYLON.StandardMaterial('visor',scene);m.diffuseColor=new C3(.02,.02,.03);m.emissiveColor=new C3(.05,.12,.22);m.specularColor=new C3(1,1,1);m.specularPower=200;return m;});
   const A=(n,w,h,d,x,y,z,m)=>{const b=BABYLON.MeshBuilder.CreateBox(n+'_'+root.name,{width:w,height:h,depth:d},scene);b.material=m||bm;b.parent=root;b.position.set(x,y,z);shadowGen.addShadowCaster(b);return b;};
   // Body
   A('body',1.55,.3,3.8,0,.3,0);A('side1',.45,.25,2.2,-1.04,.28,0);A('side2',.45,.25,2.2,1.04,.28,0);
@@ -543,9 +735,22 @@ function makeCar(hexCol){
   // Halo
   const halo=BABYLON.MeshBuilder.CreateTorus('halo_'+root.name,{diameter:.88,thickness:.055,tessellation:18},scene);
   halo.material=dk;halo.parent=root;halo.position.set(0,.82,.28);halo.rotation.z=Math.PI/2;halo.scaling.x=.5;shadowGen.addShadowCaster(halo);
-  // Helmet
-  const helm=BABYLON.MeshBuilder.CreateSphere('helm_'+root.name,{diameter:.42,segments:10},scene);
-  helm.material=bm;helm.parent=root;helm.position.set(0,.77,.26);shadowGen.addShadowCaster(helm);
+  // ── PILOTO VISIBLE (torso + casco + visera) — estilo Mario Kart, se ve un personaje real ──
+  const torso=BABYLON.MeshBuilder.CreateCapsule('torso_'+root.name,{height:.5,radius:.19,tessellation:10},scene);
+  torso.material=bm;torso.parent=root;torso.position.set(0,.62,.15);torso.rotation.x=Math.PI*.08;shadowGen.addShadowCaster(torso);
+  const helm=BABYLON.MeshBuilder.CreateSphere('helm_'+root.name,{diameter:.46,segments:12},scene);
+  helm.material=bm;helm.parent=root;helm.position.set(0,.92,.24);shadowGen.addShadowCaster(helm);
+  const visor=BABYLON.MeshBuilder.CreateBox('visor_'+root.name,{width:.36,height:.15,depth:.12},scene);
+  visor.material=visorM;visor.parent=root;visor.position.set(0,.92,.44);shadowGen.addShadowCaster(visor);
+  // Número de carrera en el alerón trasero (le da personalidad, estilo kart)
+  const numTex=SM('numTex_'+col,()=>{
+    const t=new BABYLON.DynamicTexture('numTex_'+col+Math.random(),{width:64,height:64},scene);
+    const cx=t.getContext();cx.fillStyle='#fff';cx.fillRect(0,0,64,64);
+    cx.fillStyle=col;cx.font='bold 40px Arial';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(String(Math.floor(Math.random()*90)+1),32,36);t.update();return t;});
+  const numPlate=BABYLON.MeshBuilder.CreatePlane('num_'+root.name,{width:.5,height:.5},scene);
+  numPlate.material=SM('numMat_'+col,()=>{const m=new BABYLON.StandardMaterial('numMat_'+col,scene);m.diffuseTexture=numTex;m.emissiveColor=new C3(.3,.3,.3);m.specularColor=new C3(0,0,0);m.backFaceCulling=false;return m;});
+  numPlate.parent=root;numPlate.position.set(0,.85,-2.08);numPlate.rotation.x=Math.PI/2;
   // Stripe
   const stripe_mat=new BABYLON.StandardMaterial('stripe_'+root.name,scene);stripe_mat.diffuseColor=new C3(1,1,1);stripe_mat.emissiveColor=new C3(.25,.25,.25);
   A('stripe',1.57,.06,2.4,0,.46,0,stripe_mat);
@@ -567,7 +772,7 @@ function f2w(frac,lane=0){
   const t=((frac/100)%1+1)%1;const info=TP(t);
   // CORRECTO: sin(θ)=ttx, cos(θ)=ttz  →  θ=atan2(ttx,ttz)
   const rotY=Math.atan2(info.ttx,info.ttz);
-  return{x:info.x+info.nx*lane*RW_H*.6*.5,y:.35,z:info.z+info.nz*lane*RW_H*.6*.5,rotY};
+  return{x:info.x+info.nx*lane*RW_H*.6*.5,y:.35,z:info.z+info.nz*lane*RW_H*.6*.5,rotY,ttx:info.ttx,ttz:info.ttz};
 }
 
 const cars={},carMats={};window.AC={};
@@ -583,6 +788,7 @@ function updateCar(cid,frac,lane,color){
   const wp=f2w(frac,lane);
   cars[cid].position.set(wp.x,wp.y,wp.z);
   cars[cid].rotation.y=wp.rotY;
+  if(cid===myId){myTangent={ttx:wp.ttx,ttz:wp.ttz};}
 }
 
 // (wheel spin moved to main beforeRender)
@@ -596,16 +802,20 @@ scene.registerBeforeRender(()=>{
   Object.values(cars).forEach(c=>{if(c&&c._tires)c._tires.forEach(t=>t.rotation.x+=.2);});
 
   // ÓRBITA CINEMÁTICA (title / circuit / select)
-  // FollowCamera sigue _orbT que se mueve → cámara orbita la pista
   if(gameState==='title'||gameState==='circuit'||gameState==='select'){
     cinT+=.004;
-    // Mover el dummy target lentamente (la cámara lo seguirá a distancia)
     _orbT.position.set(Math.cos(cinT+.5)*20,5,Math.sin(cinT+.5)*15);
-    // Forzar posición de cámara para la órbita dramática
     camera.position.set(Math.cos(cinT)*165,62,Math.sin(cinT)*85);
+    camera.setTarget(_orbT.position);
   }
-  // Durante racing/countdown: FollowCamera sigue playerCar automáticamente
-  // (lockedTarget fue cambiado a playerCar en player:registered)
+  // Durante racing/countdown: posicionamos la cámara nosotros mismos, detrás y arriba del auto,
+  // usando la tangente real de la pista (sin depender de comportamiento automático de Babylon)
+  else if((gameState==='racing'||gameState==='countdown')&&playerCar&&myTangent){
+    const back=13,height=6.2;
+    const px=playerCar.position.x,py=playerCar.position.y,pz=playerCar.position.z;
+    camera.position.set(px-myTangent.ttx*back,py+height,pz-myTangent.ttz*back);
+    camera.setTarget(new BABYLON.Vector3(px+myTangent.ttx*4,py+1.3,pz+myTangent.ttz*4));
+  }
 });
 
 setLoad(95,'Listo...');
@@ -623,6 +833,7 @@ const socket=io();const ns={1:'ok',2:'ok',3:'ok'};
 
 socket.on('player:registered',({carId,sectorId,vectorClock})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
+  g('sel').style.display='none'; // ← FIX: esto faltaba, por eso se quedaba "Conectando..."
   g('hud').style.display='block';g('ctl').style.display='grid';
   g('sl').textContent='SECTOR S'+sectorId;
   addLog('Auto '+carId+' listo','lg2');
@@ -630,7 +841,8 @@ socket.on('player:registered',({carId,sectorId,vectorClock})=>{
   const wp=f2w(1,0);
   cars[myId]=makeCar(myCol);playerCar=cars[myId];
   playerCar.position.set(wp.x,wp.y,wp.z);
-  // camera sigue al auto via beforeRender (FreeCamera)
+  playerCar.rotation.y=wp.rotY;
+  myTangent={ttx:wp.ttx,ttz:wp.ttz}; // para que la cámara ya sepa hacia dónde mirar desde el primer cuadro
   gameState='countdown';
   runLights(()=>{gameState='racing';addLog('🚥 ¡GO!','lg2');});
 });
@@ -662,7 +874,10 @@ socket.on('race:event',ev=>{
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
   if(ev.type==='NODE_DOWN')addLog('S'+ev.sectorId+' CAÍDO','lw');
   if(ev.type==='PLAYER_JOINED'&&ev.color)carMats[ev.carId]=ev.color;
-  if(ev.type==='PLAYER_LEFT'&&cars[ev.carId]){cars[ev.carId].getChildMeshes().forEach(m=>m.dispose());cars[ev.carId].dispose();delete cars[ev.carId];}
+  if(ev.type==='PLAYER_LEFT'){
+    if(cars[ev.carId]){cars[ev.carId].getChildMeshes().forEach(m=>m.dispose());cars[ev.carId].dispose();delete cars[ev.carId];}
+    if(window.AC&&window.AC[ev.carId])delete window.AC[ev.carId]; // ← FIX: si no, queda "fantasma" en la clasificación
+  }
   if(ev.vectorClock)g('vc').textContent='VC ['+ev.vectorClock+']';
   if(ev.type==='NODE_DOWN')ns[ev.sectorId]='d';
   if(ev.type==='LEADER_ELECTED'){Object.keys(ns).forEach(k=>{if(ns[k]!=='d')ns[k]='ok';});ns[ev.leader]='l';}
@@ -707,11 +922,29 @@ let _selC=-1;
 function selC(i){_selC=i;selCirc=i;document.querySelectorAll('.cc').forEach((c,j)=>c.classList.toggle('active',j===i));
   const btn=g('cgb');btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';
   // Update sky
-  const CR=CIRCS[i];scene.clearColor=new BABYLON.Color4(...CR.sky,1);hemi.diffuse=new BABYLON.Color3(...CR.sky);}
+  const CR=CIRCS[i];scene.clearColor=new BABYLON.Color4(...CR.sky,1);hemi.diffuse=new BABYLON.Color3(...CR.sky);
+  // Reconstruye la pista y el estadio con la forma y colores reales del circuito elegido
+  rebuildCircuit(i);}
 function showPause(){g('pm').style.display='flex';}
 function hidePause(){g('pm').style.display='none';}
 g('pm').addEventListener('click',e=>{if(e.target===g('pm'))hidePause();});
-function JR(){const n=g('ni').value.trim()||'Piloto';myCol=TEAMS[selTeam].col;socket.emit('player:join',{name:n,color:myCol,team:TEAMS[selTeam].name});g('sel').style.display='none';}
+let _joinTimer=null;
+function JR(){
+  const n=g('ni').value.trim()||'Piloto';myCol=TEAMS[selTeam].col;
+  const btn=document.querySelector('#sel .gb');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Conectando al servidor...';}
+  socket.emit('player:join',{name:n,color:myCol,team:TEAMS[selTeam].name});
+  clearTimeout(_joinTimer);
+  _joinTimer=setTimeout(()=>{
+    if(btn){btn.disabled=false;btn.innerHTML='&#128992;&nbsp;&nbsp;ACELERAR AL GRID';}
+    alert('⚠️ No se pudo conectar con el servidor de carrera (Gateway/Sector).\n\nRevisa que Docker esté corriendo:\n  docker compose down\n  docker compose up --build\n\nY que no haya errores en la consola (F12).');
+  },7000);
+}
+socket.on('player:registered',()=>{clearTimeout(_joinTimer);});
+socket.on('connect_error',(err)=>{
+  clearTimeout(_joinTimer);
+  addLog('Sin conexión al Gateway: '+err.message,'lw');
+});
 
 // ── HUD ──────────────────────────────────────────────────────
 function buildRPM(){const r=g('rr');if(!r)return;r.innerHTML='';for(let i=0;i<20;i++){const d=document.createElement('div');d.className='rs';d.id='rs'+i;d.style.background='#0a0a18';r.appendChild(d);}}
