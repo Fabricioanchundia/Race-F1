@@ -57,10 +57,16 @@ const hb = new HeartbeatMonitor(SECTOR_ID, redis, async (downId) => {
 // Grilla de salida tipo "kart": 2 autos por fila, en zigzag, escalonados hacia atrás,
 // bien pegados a la línea de meta (antes llegaba a 24 unidades de distancia, se veía
 // como si arrancaran en cualquier parte en vez de justo detrás de la meta).
+// Grilla de salida tipo "kart": 3 autos por fila, en zigzag, bien pegados a la línea
+// de meta (antes eran 2 por fila y necesitaba hasta 15 unidades de posición para 10
+// autos — en circuitos compactos eso ya era un tramo visible del trazado, así que los
+// autos arrancaban dispersos lejos de la meta en vez de agrupados detrás, como en un
+// arranque real de F1). Con 3 por fila el total baja a menos de la mitad.
+const LANES = [-0.65, 0, 0.65]; // separación entre carriles: 0.65 y 1.3 de diferencia, ambas > 0.55 (umbral de colisión)
 function gridSlot(i){
-  const row = Math.floor(i/2);
-  const lane = i%2===0 ? -0.32 : 0.32;
-  return { position: Math.max(0, 15 - row*3), lane };
+  const row = Math.floor(i/LANES.length);
+  const lane = LANES[i%LANES.length];
+  return { position: Math.max(0, 7 - row*2.3), lane }; // 2.3 > 2.0 (umbral de colisión) entre filas
 }
 const BOTS = [
   {id:'bot_hamilton', name:'Hamilton', color:'#00d2be', targetSpd:3.0},
@@ -203,8 +209,19 @@ async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
   // Dos autos a velocidad pareja = simple roce (impact cerca de 0.25). Se manda al
   // cliente para que anime la cámara más o menos fuerte según qué tan duro fue.
   const impact = Math.min(1, Math.abs(cA.speed - cB.speed) / 4.5 + 0.25);
-  const penalty = 1 + impact * 2.5; // entre 1 y 3.5 según la fuerza del golpe
-  if (cA.speed>=cB.speed) cA.speed=Math.max(cA.speed-penalty,0); else cB.speed=Math.max(cB.speed-penalty,0);
+  // BUG ARREGLADO: antes se restaba un número fijo (hasta 3.5) a la velocidad — con
+  // un golpe fuerte a velocidad normal, eso dejaba al auto completamente detenido en
+  // seco (Math.max(speed-3.5,0)), que se sentía como quedar "trabado" en vez de solo
+  // perder velocidad. Ahora es un PORCENTAJE de la velocidad actual (35% en un roce,
+  // hasta 75% en un golpazo), y nunca lo deja del todo en 0 si venía en movimiento —
+  // el peor golpe posible te deja avanzando lento, no parado.
+  const applyPenalty = (car) => {
+    const keep = 1 - (0.35 + impact*0.4); // fracción de velocidad que conserva
+    let newSpeed = car.speed * keep;
+    if (car.speed > 0.3 && newSpeed < 0.35) newSpeed = 0.35; // nunca queda en 0 si venía en marcha
+    car.speed = newSpeed;
+  };
+  if (cA.speed>=cB.speed) applyPenalty(cA); else applyPenalty(cB);
   // BUG ARREGLADO: el enfriamiento de arriba es por PAREJA, así que en un amontonamiento
   // de 3+ autos, uno distinto podía golpearte cada 100ms sin que ninguna pareja "repitiera"
   // dentro de los 700ms — quedabas trabado en 0 para siempre. Ahora, tras recibir un golpe,

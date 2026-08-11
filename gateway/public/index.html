@@ -1227,7 +1227,7 @@ function onHandoffEvent(ev){
 function finishRace(){
   if(gameState==='finished')return;
   gameState='finished';
-  const sorted=Object.entries(window.AC||{}).sort((a,b)=>(b[1].position||0)-(a[1].position||0));
+  const sorted=Object.entries(window.AC||{}).sort((a,b)=>raceProgress(b[0],b[1].position)-raceProgress(a[0],a[1].position));
   const myIdx=sorted.findIndex(([id])=>id===myId);
   const medals=['🥇','🥈','🥉'];
   g('finPos').innerHTML=myIdx>=0
@@ -1327,8 +1327,24 @@ function onRaceStartEvent(ev){
     runLights(()=>{gameState='racing';raceStartTime=Date.now();lapStartTime=Date.now();addLog('🚥 ¡GO!','lg2');});
   }
 }
+// BUG ARREGLADO: la clasificación ordenaba solo por 'position' (0-100), que se reinicia
+// CADA VUELTA -- un auto en su 3ra vuelta en posición 20 aparecía detrás de uno en su
+// 1ra vuelta en posición 80, aunque el primero vaya mucho más adelante en la carrera
+// real. Se necesita la vuelta de cada auto para ordenar bien (vuelta*100+posición).
+// El evento HANDOFF ya le llega a TODOS los clientes (no solo al dueño del auto), así
+// que se puede trackear la vuelta de cualquier auto sin tocar el servidor ni Socket.IO.
+const carLaps={};
+function trackLap(ev){
+  if(ev.toSector===1&&ev.fromSector===3)carLaps[ev.carId]=(carLaps[ev.carId]||1)+1;
+}
+// Progreso total de un auto para ordenar la clasificación: vuelta*100+posición, no solo
+// la posición (que se reinicia cada vuelta y por sí sola no alcanza para comparar autos
+// en vueltas distintas).
+function raceProgress(carId,position){
+  return (carLaps[carId]||1)*100+(position||0);
+}
 socket.on('race:event',ev=>{
-  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);}
+  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);trackLap(ev);}
   if(ev.type==='COLLISION')onCollisionEvent(ev);
   if(ev.type==='RACE_START')onRaceStartEvent(ev);
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
@@ -1465,7 +1481,7 @@ function updateHUD(){
   // BUG ARREGLADO: c.position YA es la posición global 0-100 (igual que en todo el resto
   // del juego) — sumarle (sector-1)*33 duplicaba el offset y podía dar el orden de
   // posiciones equivocado cada vez que había autos en sectores distintos.
-  const sorted=Object.values(window.AC).sort((a,b)=>(b.position||0)-(a.position||0));
+  const sorted=Object.values(window.AC).sort((a,b)=>raceProgress(b.carId,b.position)-raceProgress(a.carId,a.position));
   const rank=sorted.findIndex(c=>c.carId===myId)+1;
   if(rank>0){g('pn').textContent=rank;
     g('pn').style.color=['','#ffd700','#c0c0c0','#cd7f32'][rank]||'#888';
