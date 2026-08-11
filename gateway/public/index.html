@@ -1307,6 +1307,12 @@ function toggleDistPanel(){
 }
 function onRaceStartEvent(ev){
   _raceAlreadyStarted=true;
+  // BUG ARREGLADO: las vueltas de cada auto (carLaps, usadas para ordenar la
+  // clasificación) nunca se limpiaban entre rondas. Un bot que había completado 3
+  // vueltas en la ronda anterior seguía "en vuelta 3" en la ronda nueva, aunque el
+  // servidor ya lo reseteó a la grilla — aparecía absurdamente adelante en la
+  // clasificación mientras estaba parado en la línea de salida.
+  for(const id in carLaps)delete carLaps[id];
   if(ev&&typeof ev.circuit==='number')syncCircuitWithServer(ev.circuit);
   if(_isQueued){
     // Nos tocó el turno: el servidor ya nos puso en la grilla de la nueva ronda,
