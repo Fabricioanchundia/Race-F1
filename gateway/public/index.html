@@ -878,15 +878,19 @@ function onHandoffEvent(ev){
 }
 function onCollisionEvent(ev){
   if(ev.carA!==myId&&ev.carB!==myId)return;
-  g('cf').style.opacity='1';setTimeout(()=>g('cf').style.opacity='0',160);
+  const impact=ev.impact??0.5; // 0.25=roce suave · 1=golpe fuerte (viene del servidor)
+  const flashOpacity=0.35+impact*0.65,flashMs=120+impact*160;
+  const cf=g('cf');cf.style.opacity=String(flashOpacity);setTimeout(()=>cf.style.opacity='0',flashMs);
+  const ampX=1+impact*5,ampY=0.6+impact*2.4,frames=4+Math.round(impact*8);
   let n=0;
   const sh=()=>{
-    if(n++>6){canvas.style.transform='none';return;}
-    canvas.style.transform=`translate(${(rnd()-.5)*2.5}px,${(rnd()-.5)*1.2}px)`;
+    if(n++>frames){canvas.style.transform='none';return;}
+    const decay=1-n/frames; // el temblor se va apagando, no corta seco
+    canvas.style.transform=`translate(${(rnd()-.5)*ampX*decay}px,${(rnd()-.5)*ampY*decay}px)`;
     setTimeout(sh,38);
   };
   sh();
-  addLog('¡COLISIÓN! S'+ev.sector,'lw');
+  addLog((impact>0.7?'💥 ¡COLISIÓN FUERTE! ':'¡Colisión! ')+'S'+ev.sector,'lw');
 }
 function onPlayerLeftEvent(ev){
   if(cars[ev.carId]){cars[ev.carId].getChildMeshes().forEach(m=>m.dispose());cars[ev.carId].dispose();delete cars[ev.carId];}

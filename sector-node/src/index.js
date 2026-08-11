@@ -92,9 +92,15 @@ function separateLanes(cA, cB) {
 // Baja velocidad y publica el evento — solo una vez cada 700ms por par, no cada 100ms
 async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
   lastCollision[key] = now;
-  if (cA.speed>=cB.speed) cA.speed=Math.max(cA.speed-2,0); else cB.speed=Math.max(cB.speed-2,0);
-  console.log(`[S${SECTOR_ID}] COLISIÓN: ${idA} vs ${idB}`);
-  await redisPub.publish('race:events',JSON.stringify({type:'COLLISION',carA:idA,carB:idB,sector:SECTOR_ID,timestamp:Date.now()}));
+  // Impacto = qué tan distinta era la velocidad de los dos autos al chocar.
+  // Un bot a toda velocidad contra un auto detenido = golpe fuerte (impact cerca de 1).
+  // Dos autos a velocidad pareja = simple roce (impact cerca de 0.25). Se manda al
+  // cliente para que anime la cámara más o menos fuerte según qué tan duro fue.
+  const impact = Math.min(1, Math.abs(cA.speed - cB.speed) / 4.5 + 0.25);
+  const penalty = 1 + impact * 2.5; // entre 1 y 3.5 según la fuerza del golpe
+  if (cA.speed>=cB.speed) cA.speed=Math.max(cA.speed-penalty,0); else cB.speed=Math.max(cB.speed-penalty,0);
+  console.log(`[S${SECTOR_ID}] COLISIÓN: ${idA} vs ${idB} (impacto ${impact.toFixed(2)})`);
+  await redisPub.publish('race:events',JSON.stringify({type:'COLLISION',carA:idA,carB:idB,sector:SECTOR_ID,impact,timestamp:Date.now()}));
 }
 
 // Evalúa un solo par de autos: ¿deben chocar? si sí, los separa y aplica la penalización
