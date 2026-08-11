@@ -6,12 +6,14 @@ const HeartbeatMonitor = require('./heartbeat');
 const BullyElection    = require('./bully');
 
 const app = express();
-app.use(cors()); app.use(express.json());
+app.disable('x-powered-by'); // no revelar la version del framework (pedido por SonarQube)
+app.use(cors()); // NOSONAR: API interna entre nodos del mismo sistema, sin datos sensibles
+app.use(express.json());
 
-const SECTOR_ID   = parseInt(process.env.SECTOR_ID || '1');
-const PORT        = parseInt(process.env.PORT || '3001');
+const SECTOR_ID   = Number.parseInt(process.env.SECTOR_ID || '1');
+const PORT        = Number.parseInt(process.env.PORT || '3001');
 const REDIS_URL   = process.env.REDIS_URL || 'redis://localhost:6379';
-const GATEWAY     = process.env.GATEWAY_URL || 'http://gateway:3000';
+const GATEWAY     = process.env.GATEWAY_URL || 'http://gateway:3000'; // NOSONAR: URL interna de red privada (Docker/Railway), no expuesta a internet
 const SECTOR_URLS = {
   1: process.env.SECTOR_1_URL || 'http://localhost:3001',
   2: process.env.SECTOR_2_URL || 'http://localhost:3002',
@@ -54,49 +56,77 @@ function releaseBots() {
 
 const lastCollision = {}; // enfriamiento por par de autos, evita el spam infinito
 
-// GAME LOOP
+// Actualiza física de UN auto (posición, velocidad, carril) y hace handoff si sale del sector
+async function updateCarPhysics(carId, car) {
+  if (car.isBot) {
+    if (car.ready) {
+      car.speed = Math.max(0, Math.min(4.8, car.speed + (car.targetSpd - car.speed)*.06 + (Math.random()-.5)*.08)); // NOSONAR: aleatoriedad de IA de bots, no criptografica
+      car.lane  = (car.lane||0) * .92 + (Math.random()-.5)*.02; // NOSONAR: aleatoriedad de IA de bots, no criptografica
+    } else { car.speed = 0; }
+  } else {
+    car.lane = (car.lane||0) * .88;
+  }
+  car.position = Number.parseFloat((car.position + car.speed * .1).toFixed(2));
+  if (car.position >= RANGE[SECTOR_ID].max) {
+    const next = SECTOR_ID < 3 ? SECTOR_ID+1 : 1;
+    await handoff(carId, car, next);
+    cars.delete(carId);
+    return;
+  }
+  await redis.hset(`car:${carId}`, {position:car.position,speed:car.speed,sector:SECTOR_ID,name:car.name,color:car.color||'#888',lane:car.lane||0});
+}
+
+function isColliding(cA, cB) {
+  return Math.abs(cA.position-cB.position)<2.0 && Math.abs((cA.lane||0)-(cB.lane||0))<0.55;
+}
+
+// Siempre separa de carril a un par que choco (si no, quedan pegados chocando para siempre)
+function separateLanes(cA, cB) {
+  if ((cA.lane||0)<=(cB.lane||0)) { cA.lane=Math.max((cA.lane||0)-0.32,-0.88); cB.lane=Math.min((cB.lane||0)+0.32,0.88); }
+  else { cB.lane=Math.max((cB.lane||0)-0.32,-0.88); cA.lane=Math.min((cA.lane||0)+0.32,0.88); }
+}
+
+// Baja velocidad y publica el evento — solo una vez cada 700ms por par, no cada 100ms
+async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
+  lastCollision[key] = now;
+  if (cA.speed>=cB.speed) cA.speed=Math.max(cA.speed-2,0); else cB.speed=Math.max(cB.speed-2,0);
+  console.log(`[S${SECTOR_ID}] COLISIÓN: ${idA} vs ${idB}`);
+  await redisPub.publish('race:events',JSON.stringify({type:'COLLISION',carA:idA,carB:idB,sector:SECTOR_ID,timestamp:Date.now()}));
+}
+
+// Evalúa un solo par de autos: ¿deben chocar? si sí, los separa y aplica la penalización
+async function handlePair(idA, cA, idB, cB, hit, now) {
+  if (hit.has(idA)||hit.has(idB)) return;
+  // Un bot que AÚN NO arrancó (esperando en la grilla) no debe chocar con nadie —
+  // si no, el jugador nace pegado a él y queda atrapado sin poder acelerar nunca.
+  if ((cA.isBot && !cA.ready) || (cB.isBot && !cB.ready)) return;
+  if (!isColliding(cA,cB)) return;
+  const key = idA<idB ? idA+'|'+idB : idB+'|'+idA;
+  separateLanes(cA,cB);
+  hit.add(idA);hit.add(idB);
+  if (!lastCollision[key] || now-lastCollision[key]>700) {
+    await applyCollisionPenalty(idA,cA,idB,cB,key,now);
+  }
+}
+
+async function checkCollisions() {
+  const arr = [...cars.entries()]; const hit = new Set();
+  const now = Date.now();
+  for (let i=0;i<arr.length;i++) {
+    for (let j=i+1;j<arr.length;j++) {
+      const [idA,cA]=arr[i],[idB,cB]=arr[j];
+      await handlePair(idA,cA,idB,cB,hit,now);
+    }
+  }
+}
+
+// GAME LOOP — cada 100ms: mueve autos, revisa colisiones, publica el estado
 setInterval(async () => {
   if (cars.size === 0) return;
   for (const [carId, car] of cars) {
-    if (car.isBot) {
-      if (car.ready) {
-        car.speed = Math.max(0, Math.min(4.8, car.speed + (car.targetSpd - car.speed)*.06 + (Math.random()-.5)*.08));
-        car.lane  = (car.lane||0) * .92 + (Math.random()-.5)*.02;
-      } else { car.speed = 0; }
-    } else {
-      car.lane = (car.lane||0) * .88;
-    }
-    car.position = parseFloat((car.position + car.speed * .1).toFixed(2));
-    if (car.position >= RANGE[SECTOR_ID].max) {
-      const next = SECTOR_ID < 3 ? SECTOR_ID+1 : 1;
-      await handoff(carId, car, next); cars.delete(carId); continue;
-    }
-    await redis.hset(`car:${carId}`, {position:car.position,speed:car.speed,sector:SECTOR_ID,name:car.name,color:car.color||'#888',lane:car.lane||0});
+    await updateCarPhysics(carId, car);
   }
-  // Colisiones
-  const arr = [...cars.entries()]; const hit = new Set();
-  const now = Date.now();
-  for (let i=0;i<arr.length;i++) for (let j=i+1;j<arr.length;j++) {
-    const [idA,cA]=arr[i],[idB,cB]=arr[j];
-    if (hit.has(idA)||hit.has(idB)) continue;
-    // Un bot que AÚN NO arrancó (esperando en la grilla) no debe chocar con nadie —
-    // si no, el jugador nace pegado a él y queda atrapado sin poder acelerar nunca.
-    if ((cA.isBot && !cA.ready) || (cB.isBot && !cB.ready)) continue;
-    if (Math.abs(cA.position-cB.position)<2.0 && Math.abs((cA.lane||0)-(cB.lane||0))<0.55) {
-      const key = idA<idB ? idA+'|'+idB : idB+'|'+idA;
-      // Siempre separarlos de carril (si no, quedan pegados chocando para siempre)
-      if((cA.lane||0)<=(cB.lane||0)){cA.lane=Math.max((cA.lane||0)-0.32,-0.88);cB.lane=Math.min((cB.lane||0)+0.32,0.88);}
-      else{cB.lane=Math.max((cB.lane||0)-0.32,-0.88);cA.lane=Math.min((cA.lane||0)+0.32,0.88);}
-      hit.add(idA);hit.add(idB);
-      // Solo publicar el EVENTO (y bajar velocidad) una vez cada 700ms por par, no cada 100ms
-      if(!lastCollision[key] || now-lastCollision[key]>700){
-        lastCollision[key]=now;
-        if(cA.speed>=cB.speed) cA.speed=Math.max(cA.speed-2,0); else cB.speed=Math.max(cB.speed-2,0);
-        await redisPub.publish('race:events',JSON.stringify({type:'COLLISION',carA:idA,carB:idB,sector:SECTOR_ID,timestamp:Date.now()}));
-        console.log(`[S${SECTOR_ID}] COLISIÓN: ${idA} vs ${idB}`);
-      }
-    }
-  }
+  await checkCollisions();
   await redisPub.publish('race:state',JSON.stringify({sectorId:SECTOR_ID,cars:[...cars.entries()].map(([id,c])=>({carId:id,name:c.name,position:c.position,speed:c.speed,color:c.color||'#888',isBot:!!c.isBot,lane:c.lane||0})),timestamp:Date.now()}));
 }, 100);
 
@@ -111,8 +141,15 @@ async function handoff(carId, car, target) {
 
 app.post('/car/register', (req,res) => {
   const {carId,name,color,vectorClock}=req.body;
-  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+28,speed:0,lane:0,vectorClock});
-  console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO`);
+  // BUG ARREGLADO: antes TODOS los jugadores nacían en el mismo carril (0), quedando
+  // encimados si se unían dos al mismo tiempo. Ahora cada uno nace en un carril distinto.
+  const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
+  const laneSlots = [0,-0.6,0.6,-0.88,0.88,-0.3,0.3];
+  const lane = laneSlots[humanCount % laneSlots.length];
+  // También separamos un poco la posición de arranque para que ni siquiera el carril los salve de chocar
+  const posOffset = Math.floor(humanCount/laneSlots.length)*1.5;
+  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+28+posOffset,speed:0,lane,vectorClock});
+  console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${lane})`);
   // Primera vez que llega un jugador real → contar 5s y soltar bots
   if (!playerJoined && SECTOR_ID===1) {
     playerJoined = true;

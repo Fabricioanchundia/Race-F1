@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RaceSync F1</title>
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <style>
@@ -15,7 +15,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .ldl .r{color:#e10600;}.ldl .s{color:#fff;}
 .ldb{width:220px;height:5px;background:#111;border-radius:3px;overflow:hidden;}
 .ldf{height:100%;background:#e10600;border-radius:3px;transition:width .3s;}
-.ldt{font-size:.65rem;color:#333;letter-spacing:.1em;}
+.ldt{font-size:.65rem;color:#8a8a8a;letter-spacing:.1em;}
 /* TITLE */
 #ts{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.25);}
 .tl{font-size:min(7rem,15vw);font-weight:900;letter-spacing:.08em;text-align:center;
@@ -24,14 +24,14 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .tl .r{color:#e10600;}.tl .s{color:#fff;}
 @keyframes glow{from{text-shadow:0 0 40px rgba(225,6,0,.8),0 0 80px rgba(225,6,0,.3);}
   to{text-shadow:0 0 70px rgba(225,6,0,1),0 0 140px rgba(225,6,0,.7);}}
-.ts{font-size:.72rem;color:#333;letter-spacing:.3em;}
-.tb{padding:6px 20px;border:1px solid rgba(225,6,0,.4);border-radius:6px;font-size:.62rem;color:#e10600;letter-spacing:.18em;background:rgba(225,6,0,.08);}
-.ps{font-size:1rem;font-weight:bold;letter-spacing:.2em;cursor:pointer;padding:17px 38px;
+.ts{font-size:.72rem;color:#8a8a8a;letter-spacing:.3em;}
+.tb{padding:6px 20px;border:1px solid rgba(225,6,0,.5);border-radius:6px;font-size:.62rem;color:#ff4136;letter-spacing:.18em;background:#200000;}
+.ps{font:inherit;font-size:1rem;font-weight:bold;color:inherit;letter-spacing:.2em;cursor:pointer;padding:17px 38px;
   border:2px solid rgba(225,6,0,.6);border-radius:50px;background:rgba(225,6,0,.12);
   animation:btn 1.4s ease-in-out infinite;}
 .ps:hover{background:rgba(225,6,0,.3);box-shadow:0 0 40px rgba(225,6,0,.4);}
 @keyframes btn{0%,100%{transform:scale(1);}50%{transform:scale(1.03);}}
-.cr{position:absolute;bottom:10px;font-size:.58rem;color:#181818;letter-spacing:.08em;}
+.cr{position:absolute;bottom:10px;font-size:.58rem;color:#767676;letter-spacing:.08em;}
 /* CIRCUIT SELECT */
 #cs{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;
   justify-content:center;gap:16px;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,10,.55),rgba(0,0,0,.82));backdrop-filter:blur(10px);}
@@ -40,7 +40,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .cg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:min(720px,94vw);
   background:rgba(8,6,18,.55);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:18px;
   box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);}
-.cc{background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.08);border-radius:16px;
+.cc{font:inherit;color:inherit;background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.08);border-radius:16px;
   padding:18px 12px 14px;text-align:center;cursor:pointer;transition:all .2s cubic-bezier(.2,.8,.3,1);
   display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden;}
 .cc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);transition:background .2s;}
@@ -49,7 +49,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .cc.active::before{background:linear-gradient(90deg,#e10600,#ff6a30);}
 .cf{font-size:2.2rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}.cn{font-size:1.05rem;font-weight:900;letter-spacing:.1em;}
 .ck{font-size:.58rem;color:#666;letter-spacing:.02em;}
-.ci{font-size:.6rem;color:#999;background:rgba(255,255,255,.06);padding:3px 11px;border-radius:12px;margin-top:2px;}
+.ci{font-size:.6rem;color:#b8b8b8;background:#252134;padding:3px 11px;border-radius:12px;margin-top:2px;}
 .cc canvas{border-radius:10px;border:1px solid rgba(255,255,255,.1);margin-top:6px;box-shadow:0 6px 16px rgba(0,0,0,.35);}
 /* SELECT */
 #sel{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;
@@ -82,7 +82,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .bk{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);color:#666;padding:7px 16px;
   border-radius:9px;cursor:pointer;font-size:.74rem;align-self:flex-end;transition:all .15s;}
 .bk:hover{color:#aaa;border-color:rgba(255,255,255,.2);}
-.gpst{font-size:.62rem;padding:5px 12px;border-radius:16px;border:1px solid #1a1a1a;color:#444;text-align:center;}
+.gpst{font-size:.62rem;padding:5px 12px;border-radius:16px;border:1px solid #1a1a1a;color:#9a9a9a;text-align:center;}
 .gpst.ok{border-color:#27ae60;color:#27ae60;}
 /* HUD */
 #hud{position:fixed;inset:0;display:none;pointer-events:none;z-index:50;}
@@ -91,23 +91,23 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .tll{display:flex;align-items:center;gap:8px;}
 #pb{pointer-events:all;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.12);
   color:#fff;width:36px;height:36px;border-radius:8px;font-size:1rem;cursor:pointer;}
-#vc{font-family:monospace;font-size:.54rem;color:#1a1a28;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:5px;}
-#lp{font-size:.76rem;color:#444;}#lp b{color:#fff;}
+#vc{font-family:monospace;font-size:.54rem;color:#8fd9ff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:5px;}
+#lp{font-size:.76rem;color:#9a9a9a;}#lp b{color:#fff;}
 #bp{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;}
 #pn{font-size:2.8rem;font-weight:900;color:#f39c12;line-height:1;text-shadow:0 0 24px rgba(243,156,18,.7);}
 #ps{font-size:.75rem;color:#f39c12;letter-spacing:.1em;}
 #st{position:absolute;top:56px;right:8px;background:rgba(4,2,14,.92);backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:9px 11px;min-width:180px;}
-#stt{font-size:.5rem;color:#2a2a2a;letter-spacing:.2em;margin-bottom:6px;}
+#stt{font-size:.5rem;color:#868686;letter-spacing:.2em;margin-bottom:6px;}
 .sr{display:flex;align-items:center;gap:6px;padding:3px 5px;border-radius:5px;font-size:.72rem;margin-bottom:2px;}
 .sr.me{background:rgba(225,6,0,.14);border:1px solid rgba(225,6,0,.2);}
 .sp2{font-weight:900;min-width:16px;}.p1{color:#ffd700;}.p2{color:#c0c0c0;}.p3{color:#cd7f32;}.pn{color:#555;}
 .sn{flex:1;color:#bbb;}.ss{font-size:.64rem;color:#e10600;font-weight:bold;}
-.sy{font-size:.5rem;background:rgba(225,6,0,.2);color:#e10600;padding:1px 3px;border-radius:3px;}
-.sbt{font-size:.5rem;color:#333;background:rgba(30,30,30,.4);padding:1px 3px;border-radius:3px;}
+.sy{font-size:.5rem;background:#450509;color:#ff4136;padding:1px 3px;border-radius:3px;}
+.sbt{font-size:.5rem;color:#bbb;background:rgba(30,30,30,.6);padding:1px 3px;border-radius:3px;}
 #nd{position:absolute;bottom:80px;right:8px;background:rgba(4,2,14,.92);backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:7px 11px;}
-#ndt{font-size:.5rem;color:#2a2a2a;letter-spacing:.2em;margin-bottom:4px;}
+#ndt{font-size:.5rem;color:#868686;letter-spacing:.2em;margin-bottom:4px;}
 .nn{display:flex;align-items:center;gap:5px;font-size:.68rem;margin-bottom:2px;}
 .nd{width:6px;height:6px;border-radius:50%;background:#27ae60;}
 .ns-d .nd{background:#e10600;}.ns-l .nd{background:#f39c12;}
@@ -121,12 +121,12 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   display:flex;align-items:center;justify-content:space-between;padding:0 16px;}
 #spb{text-align:center;min-width:80px;}
 #spn{font-size:2.5rem;font-weight:900;color:#e10600;line-height:1;text-shadow:0 0 14px rgba(225,6,0,.5);}
-#spu{font-size:.5rem;color:#2a2a2a;letter-spacing:.15em;}
+#spu{font-size:.5rem;color:#868686;letter-spacing:.15em;}
 #ra{flex:1;text-align:center;margin:0 12px;}
 #rr{display:flex;gap:1.5px;margin-bottom:3px;}
 .rs{height:6px;border-radius:1px;flex:1;}
 #sl{font-size:.66rem;font-weight:bold;color:#3498db;}
-.gp{font-size:.52rem;padding:3px 8px;border-radius:9px;border:1px solid #1a1a1a;color:#2a2a2a;}
+.gp{font-size:.52rem;padding:3px 8px;border-radius:9px;border:1px solid #1a1a1a;color:#868686;}
 .gp.ok{border-color:#27ae60;color:#27ae60;}
 /* F1 START LIGHTS */
 #slt{position:fixed;top:6vh;left:50%;transform:translateX(-50%);z-index:300;display:none;}
@@ -135,14 +135,14 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .sl{width:40px;height:40px;border-radius:50%;background:#1a0000;border:3px solid rgba(255,0,0,.15);transition:all .12s;}
 .sl.on{background:#e10600;box-shadow:0 0 22px #e10600,0 0 50px rgba(225,6,0,.5);border-color:#e10600;}
 .sl.off{background:#0a0a0a;border-color:rgba(255,255,255,.07);}
-.sll{font-size:.62rem;color:#333;letter-spacing:.12em;margin-left:6px;}
+.sll{font-size:.62rem;color:#8a8a8a;letter-spacing:.12em;margin-left:6px;}
 /* PAUSE */
 #pm{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:rgba(0,0,8,.82);backdrop-filter:blur(8px);}
 .pmc{background:rgba(6,4,22,.96);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:32px 38px;text-align:center;min-width:270px;}
 .pmt{font-size:1.3rem;font-weight:bold;margin-bottom:5px;}.pmt span{color:#e10600;}
-.pms{font-size:.75rem;color:#333;margin-bottom:22px;}
+.pms{font-size:.75rem;color:#8a8a8a;margin-bottom:22px;}
 .pmb{width:100%;padding:12px;border:none;border-radius:10px;font-size:.87rem;font-weight:bold;letter-spacing:.1em;cursor:pointer;margin-bottom:9px;}
-.pmb.g{background:#27ae60;color:#fff;}.pmb.d{background:rgba(255,255,255,.07);color:#666;border:1px solid rgba(255,255,255,.1);}
+.pmb.g{background:#1a7d46;color:#fff;}.pmb.d{background:#2a2836;color:#e2e2e2;border:1px solid rgba(255,255,255,.15);}
 /* CONTROLS */
 #ctl{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);display:none;z-index:250;
   pointer-events:all;grid-template-columns:1fr 1.2fr 1fr;grid-template-rows:1fr 1fr;gap:7px;width:min(262px,76vw);
@@ -170,7 +170,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   <div class="tl"><span class="r">RACE</span><span class="s">SYNC</span></div>
   <div class="ts">FORMULA 1 DISTRIBUIDO · PUCE MANABÍ 2025</div>
   <div class="tb">SISTEMAS DISTRIBUIDOS + V&V · CARRERA DE SOFTWARE 2026-1</div>
-  <div class="ps" onclick="goCS()">&#9654;&nbsp;&nbsp;TOCA PARA INICIAR&nbsp;&nbsp;&#9654;</div>
+  <button type="button" class="ps" onclick="goCS()">&#9654;&nbsp;&nbsp;TOCA PARA INICIAR&nbsp;&nbsp;&#9654;</button>
   <div class="cr">PUCE Manabí · Ing. Naranjo M.Eng · Ing. Mackenzie Rivero</div>
 </div>
 <!-- CIRCUIT SELECT -->
@@ -178,27 +178,27 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   <div class="ch1">&#127942; ELIGE TU CIRCUITO</div>
   <div class="ch2">Formula 1 World Championship · 2025</div>
   <div class="cg">
-    <div class="cc" id="c0" onclick="selC(0)">
+    <button type="button" class="cc" id="c0" onclick="selC(0)">
       <div class="cf2">&#127468;&#127463;</div>
       <div class="cn" style="color:#e10600">SILVERSTONE</div>
       <div class="ck">Gran Premio de Gran Bretaña</div>
       <div class="ci">&#9737; Día · Clásico</div>
       <canvas width="130" height="65" id="mc0"></canvas>
-    </div>
-    <div class="cc" id="c1" onclick="selC(1)">
+    </button>
+    <button type="button" class="cc" id="c1" onclick="selC(1)">
       <div class="cf2">&#127470;&#127481;</div>
       <div class="cn" style="color:#ff5500">MONZA</div>
       <div class="ck">Gran Premio de Italia</div>
       <div class="ci">&#9728; Atardecer · Rápido</div>
       <canvas width="130" height="65" id="mc1"></canvas>
-    </div>
-    <div class="cc" id="c2" onclick="selC(2)">
+    </button>
+    <button type="button" class="cc" id="c2" onclick="selC(2)">
       <div class="cf2">&#127474;&#127464;</div>
       <div class="cn" style="color:#4488ff">MONACO</div>
       <div class="ck">Grand Prix de Monaco</div>
       <div class="ci">&#9790; Noche · Élite</div>
       <canvas width="130" height="65" id="mc2"></canvas>
-    </div>
+    </button>
   </div>
   <button class="gb" id="cgb" onclick="goSel()" disabled style="width:min(400px,88vw);opacity:.4;cursor:not-allowed">
     &#128992;&nbsp;&nbsp;CONFIRMAR CIRCUITO
@@ -215,7 +215,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
     </div>
     <div class="spr">
       <div class="tg" id="tg"></div>
-      <input class="ni" id="ni" placeholder="Nombre del piloto" maxlength="14">
+      <input class="ni" id="ni" placeholder="Nombre del piloto" aria-label="Nombre del piloto" maxlength="14">
       <div id="gpSt" class="gpst">&#127918; Sin control detectado</div>
       <button class="gb" onclick="JR()">&#128992;&nbsp;&nbsp;ACELERAR AL GRID</button>
     </div>
@@ -269,6 +269,13 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 // ════════════════════════════════════════════════════════════
 //  RACESYNC F1 — Babylon.js 3D · Versión limpia y funcional
 // ════════════════════════════════════════════════════════════
+
+// Único punto de aleatoriedad "insegura" de todo el archivo: se usa SOLO para
+// dibujar texturas/colores/posiciones decorativas (césped, multitud, edificios,
+// vibración de cámara). No se usa para nada relacionado a seguridad, sorteos,
+// tokens ni datos sensibles — por eso rnd() es apropiado aquí.
+// NOSONAR: aleatoriedad puramente visual/cosmética, no criptográfica.
+function rnd(){return Math.random();} // NOSONAR
 
 const TEAMS=[
   {name:'Scuderia Ferrari',col:'#e10600',ab:'SF',d1:'Leclerc',d2:'Hamilton'},
@@ -417,7 +424,7 @@ const gm=new BABYLON.StandardMaterial('gm',scene);
 const groundTex=new BABYLON.DynamicTexture('groundTex',{width:1024,height:1024},scene);
 (function paintGround(){
   const c=groundTex.getContext(),W=1024,H=1024,cx=W/2,cy=H/2;
-  const innerR=190; // radio verde alrededor del circuito (en px de textura) — reducido, menos "todo verde"
+  const innerR=190; // radio verde alrededor del circuito (en px de textura) — reducido
   // Fondo urbano base (asfalto/tierra)
   c.fillStyle='#6b6d5f';c.fillRect(0,0,W,H);
   // Manzanas de ciudad: cuadrícula de calles + edificios/parkings
@@ -429,9 +436,9 @@ const groundTex=new BABYLON.DynamicTexture('groundTex',{width:1024,height:1024},
       // calle (borde de cada manzana)
       c.fillStyle='#8a8a86';c.fillRect(gx,gy,cell,cell);
       const pad=6,bw=cell-pad*2,bh=cell-pad*2;
-      const r=Math.random();
+      const r=rnd();
       if(r<0.55){ // edificio/techo
-        const g=40+Math.floor(Math.random()*50);
+        const g=40+Math.floor(rnd()*50);
         c.fillStyle=`rgb(${g},${g},${g+4})`;
         c.fillRect(gx+pad,gy+pad,bw,bh);
       } else if(r<0.8){ // estacionamiento con líneas
@@ -443,11 +450,11 @@ const groundTex=new BABYLON.DynamicTexture('groundTex',{width:1024,height:1024},
       }
     }
   }
-  // Césped del circuito (círculo suave, con degradado hacia la ciudad)
-  const grad=c.createRadialGradient(cx,cy,innerR*0.55,cx,cy,innerR);
-  grad.addColorStop(0,'#1f8a1f');grad.addColorStop(1,'rgba(31,138,31,0)');
-  c.fillStyle=grad;c.beginPath();c.arc(cx,cy,innerR,0,Math.PI*2);c.fill();
-  c.fillStyle='#1f8a1f';c.beginPath();c.arc(cx,cy,innerR*0.6,0,Math.PI*2);c.fill();
+  // Césped del circuito (mucho más chico y oscuro — que domine el negro de la pista, no el verde)
+  const grad=c.createRadialGradient(cx,cy,innerR*0.3,cx,cy,innerR*0.55);
+  grad.addColorStop(0,'#0d3812');grad.addColorStop(1,'rgba(13,56,18,0)');
+  c.fillStyle=grad;c.beginPath();c.arc(cx,cy,innerR*0.55,0,Math.PI*2);c.fill();
+  c.fillStyle='#0d3812';c.beginPath();c.arc(cx,cy,innerR*0.28,0,Math.PI*2);c.fill();
 })();
 groundTex.update();
 gm.diffuseTexture=groundTex;gm.specularColor=new BABYLON.Color3(.01,.02,.01);
@@ -501,15 +508,15 @@ setLoad(50,'Pista...');
 let trackNodes=[],stadiumNodes=[],stadiumLights=[],cityNodes=[];
 // ── Materiales/texturas compartidos (deben existir ANTES de construir pista/estadio/ciudad) ──
 const SHARED={};
-function SM(key,createFn){if(!SHARED[key])SHARED[key]=createFn();return SHARED[key];}
+function SM(key,createFn){if(!SHARED[key]){SHARED[key]=createFn();} return SHARED[key];}
 
 function buildTrack(){
-  const _meshBefore=scene.meshes.slice();
+  const _meshBefore=new Set(scene.meshes);
   const C3=BABYLON.Color3;
   // Asphalt texture
   const at=new BABYLON.DynamicTexture('at',{width:512,height:512},scene);
   const ax=at.getContext();ax.fillStyle='#0a0a0d';ax.fillRect(0,0,512,512);
-  for(let i=0;i<5000;i++){const v=Math.floor(Math.random()*14+8);ax.fillStyle=`rgb(${v},${v},${v+2})`;ax.fillRect(Math.random()*512,Math.random()*512,1.5,1);}
+  for(let i=0;i<5000;i++){const v=Math.floor(rnd()*14+8);ax.fillStyle=`rgb(${v},${v},${v+2})`;ax.fillRect(rnd()*512,rnd()*512,1.5,1);}
   at.update();at.vScale=20;
   const rm=new BABYLON.StandardMaterial('rm',scene);rm.diffuseTexture=at;rm.specularColor=new C3(.12,.12,.14);rm.specularPower=64;
   const km=new BABYLON.StandardMaterial('km',scene);
@@ -530,7 +537,7 @@ function buildTrack(){
   const roTex=SM('roTex',()=>{
     const t=new BABYLON.DynamicTexture('roTex',{width:256,height:256},scene);const c=t.getContext();
     c.fillStyle='#1c1c1a';c.fillRect(0,0,256,256);
-    for(let i=0;i<1800;i++){const v=22+Math.floor(Math.random()*14);c.fillStyle=`rgb(${v},${v},${v-4})`;c.fillRect(Math.random()*256,Math.random()*256,1.4,1.4);}
+    for(let i=0;i<1800;i++){const v=22+Math.floor(rnd()*14);c.fillStyle=`rgb(${v},${v},${v-4})`;c.fillRect(rnd()*256,rnd()*256,1.4,1.4);}
     t.update();t.uScale=16;return t;});
   const rom=new BABYLON.StandardMaterial('rom',scene);rom.diffuseTexture=roTex;rom.specularColor=new C3(0,0,0);
   const RO_W=6.5,rfi=[],rfo=[],rfi2=[],rfo2=[];
@@ -543,13 +550,13 @@ function buildTrack(){
   // Barriers
   const bm=new BABYLON.StandardMaterial('bm',scene);bm.diffuseColor=new C3(.8,.8,.88);
   const bt=new BABYLON.MeshBuilder.CreateBox('bt',{width:.38,height:1.1,depth:5.6},scene);
-  bt.material=bm;bt.isVisible=false;
+  bt.material=bm;bt.isVisible=false;bt.receiveShadows=true; // en la fuente: las instancias lo heredan (ponerlo por instancia solo genera warnings)
   const sm=new BABYLON.StandardMaterial('sm2',scene);sm.diffuseColor=new C3(1,.78,0);sm.emissiveColor=new C3(.25,.18,0);
   const st2=BABYLON.MeshBuilder.CreateBox('st2',{width:.39,height:.18,depth:5.62},scene);st2.material=sm;st2.isVisible=false;
   const BOFF=RW_H+KW+RO_W+.8;
   for(let i=0;i<80;i++){const info=TP(i/80);[-1,1].forEach(sd=>{
     const bx=info.x+info.nx*sd*BOFF,bz=info.z+info.nz*sd*BOFF;
-    const b=bt.createInstance('b'+i+'_'+sd);b.position.set(bx,.55,bz);b.rotation.y=info.angle+Math.PI/2;b.receiveShadows=true;shadowGen.addShadowCaster(b);
+    const b=bt.createInstance('b'+i+'_'+sd);b.position.set(bx,.55,bz);b.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(b);
     if(i%3===0){const s=st2.createInstance('s'+i+'_'+sd);s.position.set(bx,.65,bz);s.rotation.y=info.angle+Math.PI/2;}
   });}
   // Sector markers
@@ -578,43 +585,43 @@ function buildTrack(){
     const f=BABYLON.MeshBuilder.CreateBox('f'+i+'_'+sd,{width:2.2,height:.28,depth:.38},scene);
     f.material=fm;f.position.set(px,12.2,pz);f.rotation.y=info.angle+Math.PI/2;
   });}
-  trackNodes=scene.meshes.filter(m=>!_meshBefore.includes(m));
+  trackNodes=scene.meshes.filter(m=>!_meshBefore.has(m));
 }
 
 // ── CIUDAD 3D alrededor del estadio (edificios de verdad, no solo textura) ──
 function buildCity(){
-  const _meshBefore=scene.meshes.slice();
+  const _meshBefore=new Set(scene.meshes);
   const C3=BABYLON.Color3;
-  const bMat=SM('bldMat',()=>{const m=new BABYLON.StandardMaterial('bldMat',scene);m.diffuseColor=new C3(.5,.5,.55);m.specularColor=new C3(.1,.1,.12);return m;});
-  const winMat=SM('winMat',()=>{const m=new BABYLON.StandardMaterial('winMat',scene);m.emissiveColor=new C3(.9,.85,.4);m.diffuseColor=new C3(.1,.1,.05);return m;});
+  SM('bldMat',()=>{const m=new BABYLON.StandardMaterial('bldMat',scene);m.diffuseColor=new C3(.5,.5,.55);m.specularColor=new C3(.1,.1,.12);return m;});
+  SM('winMat',()=>{const m=new BABYLON.StandardMaterial('winMat',scene);m.emissiveColor=new C3(.9,.85,.4);m.diffuseColor=new C3(.1,.1,.05);return m;});
   const N=78,ringR1=170,ringR2=290; // anillo de edificios más allá del estadio (más denso)
   for(let i=0;i<N;i++){
-    const a=(i/N)*Math.PI*2+Math.random()*.15;
-    const r=ringR1+Math.random()*(ringR2-ringR1);
+    const a=(i/N)*Math.PI*2+rnd()*.15;
+    const r=ringR1+rnd()*(ringR2-ringR1);
     const x=Math.cos(a)*r,z=Math.sin(a)*r*0.92;
-    const w=6+Math.random()*7,d=6+Math.random()*7,h=6+Math.random()*22;
+    const w=6+rnd()*7,d=6+rnd()*7,h=6+rnd()*22;
     const bld=BABYLON.MeshBuilder.CreateBox('bld'+i,{width:w,height:h,depth:d},scene);
-    const g=.38+Math.random()*.3;
+    const g=.38+rnd()*.3;
     const mat=new BABYLON.StandardMaterial('bm'+i,scene);mat.diffuseColor=new C3(g,g,g+.04);mat.specularColor=new C3(.08,.08,.1);
-    bld.material=mat;bld.position.set(x,h/2,z);bld.rotation.y=Math.random()*Math.PI*2;
+    bld.material=mat;bld.position.set(x,h/2,z);bld.rotation.y=rnd()*Math.PI*2;
     shadowGen.addShadowCaster(bld);
     // ventanitas iluminadas (textura simple con emissive puntos)
-    if(Math.random()<0.7){
+    if(rnd()<0.7){
       const wTex=SM('wTex',()=>{
         const t=new BABYLON.DynamicTexture('wTex',{width:64,height:128},scene);const c=t.getContext();
         c.fillStyle='#2a2a30';c.fillRect(0,0,64,128);
-        for(let wy=6;wy<122;wy+=12)for(let wx=6;wx<58;wx+=14){c.fillStyle=Math.random()<0.55?'#ffe066':'#15151a';c.fillRect(wx,wy,7,8);}
+        for(let wy=6;wy<122;wy+=12)for(let wx=6;wx<58;wx+=14){c.fillStyle=rnd()<0.55?'#ffe066':'#15151a';c.fillRect(wx,wy,7,8);}
         t.update();return t;});
       mat.emissiveTexture=wTex;mat.diffuseTexture=wTex;
     }
   }
-  cityNodes=scene.meshes.filter(m=>!_meshBefore.includes(m));
+  cityNodes=scene.meshes.filter(m=>!_meshBefore.has(m));
 }
 
 setLoad(70,'Estadio...');
 function buildStadium(){
   // RIBBON MESH STADIUM — gradas continuas siguiendo la forma del circuito
-  const _meshBefore=scene.meshes.slice(),_lightBefore=scene.lights.slice();
+  const _meshBefore=new Set(scene.meshes),_lightBefore=new Set(scene.lights);
   const C3=BABYLON.Color3;
   const ROWS=14,ROW_H=1.65,ROW_D=1.45;
   const BOFF2=RW_H+KW+.8+2.5; // just outside barriers
@@ -626,18 +633,16 @@ function buildStadium(){
     cx.fillStyle='#12121a';cx.fillRect(0,0,512,128);
     const skin=['#e8b88a','#c68642','#8d5524','#ffdbac','#f1c27d','#7a4a2b'];
     for(let i=0;i<900;i++){
-      const x=Math.random()*512,y=14+Math.random()*100;
-      const useTeam=Math.random()<0.5;
-      cx.fillStyle=useTeam?CROWD_COLS[Math.floor(Math.random()*CROWD_COLS.length)]:skin[Math.floor(Math.random()*skin.length)];
-      cx.beginPath();cx.arc(x,y,3.2+Math.random()*1.4,0,Math.PI*2);cx.fill();
+      const x=rnd()*512,y=14+rnd()*100;
+      const useTeam=rnd()<0.5;
+      cx.fillStyle=useTeam?CROWD_COLS[Math.floor(rnd()*CROWD_COLS.length)]:skin[Math.floor(rnd()*skin.length)];
+      cx.beginPath();cx.arc(x,y,3.2+rnd()*1.4,0,Math.PI*2);cx.fill();
       // sombrerito/torso debajo de cada cabeza para dar volumen
       cx.fillStyle='rgba(0,0,0,.35)';cx.fillRect(x-2.2,y+3,4.4,5);
     }
   })();
   crowdTex.update();crowdTex.wrapU=BABYLON.Texture.WRAP_ADDRESSMODE;crowdTex.uScale=26;crowdTex.vScale=1;
 
-  // Concrete base path (1 ring)
-  const basePaths=[[],[]];
   // Build tier ribbons — cada fila es un ESCALÓN real: contrahuella (vertical) + huella (horizontal)
   for(let row=0;row<ROWS;row++){
     const d0=BOFF2+row*ROW_D;
@@ -689,8 +694,8 @@ function buildStadium(){
   const txm=new BABYLON.StandardMaterial('txm',scene);txm.emissiveColor=new C3(.95,.1,.0);txm.diffuseColor=new C3(0,0,0);
   const txb=BABYLON.MeshBuilder.CreateBox('txb',{width:22,height:3.6,depth:.7},scene);txb.material=txm;txb.position.set(px,16,pz);txb.rotation.y=pRot;
   shadowGen.addShadowCaster(sb2);
-  stadiumNodes=scene.meshes.filter(m=>!_meshBefore.includes(m));
-  stadiumLights=scene.lights.filter(l=>!_lightBefore.includes(l));
+  stadiumNodes=scene.meshes.filter(m=>!_meshBefore.has(m));
+  stadiumLights=scene.lights.filter(l=>!_lightBefore.has(l));
 }
 buildTrack();
 buildStadium();
@@ -727,14 +732,14 @@ function makeCar(hexCol){
   const dk=SM('dk',()=>{const m=new BABYLON.StandardMaterial('dk',scene);m.diffuseColor=new C3(.04,.04,.1);m.specularColor=new C3(0,0,0);return m;});
   const tr=SM('tr',()=>{const m=new BABYLON.StandardMaterial('tr',scene);m.diffuseColor=new C3(.07,.07,.07);m.specularColor=new C3(.02,.02,.02);return m;});
   const rm2=SM('rm2',()=>{const m=new BABYLON.StandardMaterial('rm2',scene);m.diffuseColor=new C3(.4,.4,.45);m.specularColor=new C3(.8,.8,.85);m.specularPower=120;return m;});
-  const skinM=SM('skin',()=>{const m=new BABYLON.StandardMaterial('skin',scene);m.diffuseColor=new C3(.85,.62,.45);m.specularColor=new C3(.1,.1,.1);return m;});
+  SM('skin',()=>{const m=new BABYLON.StandardMaterial('skin',scene);m.diffuseColor=new C3(.85,.62,.45);m.specularColor=new C3(.1,.1,.1);return m;});
   const visorM=SM('visor',()=>{const m=new BABYLON.StandardMaterial('visor',scene);m.diffuseColor=new C3(.02,.02,.03);m.emissiveColor=new C3(.05,.12,.22);m.specularColor=new C3(1,1,1);m.specularPower=200;return m;});
-  const A=(n,w,h,d,x,y,z,m)=>{const b=BABYLON.MeshBuilder.CreateBox(n+'_'+root.name,{width:w,height:h,depth:d},scene);b.material=m||bm;b.parent=root;b.position.set(x,y,z);shadowGen.addShadowCaster(b);return b;};
+  const A=(n,[w,h,d],[x,y,z],m)=>{const b=BABYLON.MeshBuilder.CreateBox(n+'_'+root.name,{width:w,height:h,depth:d},scene);b.material=m||bm;b.parent=root;b.position.set(x,y,z);shadowGen.addShadowCaster(b);return b;};
   // Body
-  A('body',1.55,.3,3.8,0,.3,0);A('side1',.45,.25,2.2,-1.04,.28,0);A('side2',.45,.25,2.2,1.04,.28,0);
-  A('nose',.48,.2,1.6,0,.25,2.8);A('fw',3.0,.07,.5,0,.15,3.3);A('fwL',.07,.22,.5,-1.5,.22,3.3);A('fwR',.07,.22,.5,1.5,.22,3.3);
-  A('rw',2.6,.07,.42,0,.95,-2.1);A('rwsL',.08,.5,.1,-.65,.68,-2.1);A('rwsR',.08,.5,.1,.65,.68,-2.1);
-  A('eng',.4,.45,.78,0,.57,-.3);A('ck',.62,.5,1.2,0,.55,.2,dk);A('fl',1.55,.04,4.0,0,.08,0,dk);
+  A('body',[1.55,.3,3.8],[0,.3,0]);A('side1',[.45,.25,2.2],[-1.04,.28,0]);A('side2',[.45,.25,2.2],[1.04,.28,0]);
+  A('nose',[.48,.2,1.6],[0,.25,2.8]);A('fw',[3.0,.07,.5],[0,.15,3.3]);A('fwL',[.07,.22,.5],[-1.5,.22,3.3]);A('fwR',[.07,.22,.5],[1.5,.22,3.3]);
+  A('rw',[2.6,.07,.42],[0,.95,-2.1]);A('rwsL',[.08,.5,.1],[-.65,.68,-2.1]);A('rwsR',[.08,.5,.1],[.65,.68,-2.1]);
+  A('eng',[.4,.45,.78],[0,.57,-.3]);A('ck',[.62,.5,1.2],[0,.55,.2],dk);A('fl',[1.55,.04,4.0],[0,.08,0],dk);
   // Halo
   const halo=BABYLON.MeshBuilder.CreateTorus('halo_'+root.name,{diameter:.88,thickness:.055,tessellation:18},scene);
   halo.material=dk;halo.parent=root;halo.position.set(0,.82,.28);halo.rotation.z=Math.PI/2;halo.scaling.x=.5;shadowGen.addShadowCaster(halo);
@@ -747,16 +752,16 @@ function makeCar(hexCol){
   visor.material=visorM;visor.parent=root;visor.position.set(0,.92,.44);shadowGen.addShadowCaster(visor);
   // Número de carrera en el alerón trasero (le da personalidad, estilo kart)
   const numTex=SM('numTex_'+col,()=>{
-    const t=new BABYLON.DynamicTexture('numTex_'+col+Math.random(),{width:64,height:64},scene);
+    const t=new BABYLON.DynamicTexture('numTex_'+col+rnd(),{width:64,height:64},scene);
     const cx=t.getContext();cx.fillStyle='#fff';cx.fillRect(0,0,64,64);
     cx.fillStyle=col;cx.font='bold 40px Arial';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText(String(Math.floor(Math.random()*90)+1),32,36);t.update();return t;});
+    cx.fillText(String(Math.floor(rnd()*90)+1),32,36);t.update();return t;});
   const numPlate=BABYLON.MeshBuilder.CreatePlane('num_'+root.name,{width:.5,height:.5},scene);
   numPlate.material=SM('numMat_'+col,()=>{const m=new BABYLON.StandardMaterial('numMat_'+col,scene);m.diffuseTexture=numTex;m.emissiveColor=new C3(.3,.3,.3);m.specularColor=new C3(0,0,0);m.backFaceCulling=false;return m;});
   numPlate.parent=root;numPlate.position.set(0,.85,-2.08);numPlate.rotation.x=Math.PI/2;
   // Stripe
   const stripe_mat=new BABYLON.StandardMaterial('stripe_'+root.name,scene);stripe_mat.diffuseColor=new C3(1,1,1);stripe_mat.emissiveColor=new C3(.25,.25,.25);
-  A('stripe',1.57,.06,2.4,0,.46,0,stripe_mat);
+  A('stripe',[1.57,.06,2.4],[0,.46,0],stripe_mat);
   // Wheels
   const tires=[];
   [[-1.0,.33,1.6],[1.0,.33,1.6],[-1.05,.33,-1.55],[1.05,.33,-1.55]].forEach((pos,i)=>{
@@ -856,59 +861,100 @@ socket.on('race:state',({sectorId,cars:sc})=>{
     window.AC[c.carId]={...c,sector:sectorId};
     if(c.color)carMats[c.carId]=c.color;
     if(gameState==='racing'||gameState==='countdown'){
-      updateCar(c.carId,((sectorId-1)*33+c.position),c.lane||0,c.color||carMats[c.carId]||'#888');
+      // c.position YA es la posición global 0-100 (el handoff en sector-node la continúa,
+      // no la reinicia) — sumarle (sectorId-1)*33 duplicaba el offset y causaba el teletransporte
+      // al cruzar de sector. sectorId solo se usa para el HUD, no para ubicar el auto.
+      updateCar(c.carId,c.position,c.lane||0,c.color||carMats[c.carId]||'#888');
     }
   });
   updateHUD();
 });
 
-socket.on('race:event',ev=>{
-  if(ev.type==='HANDOFF'&&ev.carId===myId){
-    g('sl').textContent='SECTOR S'+ev.toSector;
-    if(ev.toSector===1&&ev.fromSector===3){myLap++;g('ln').textContent=myLap;addLog('Vuelta '+myLap+'!','lg2');}
-    else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
-  }
-  if(ev.type==='COLLISION'&&(ev.carA===myId||ev.carB===myId)){
-    g('cf').style.opacity='1';setTimeout(()=>g('cf').style.opacity='0',160);
-    let n=0;const sh=()=>{if(n++>6){canvas.style.transform='none';return;}
-      canvas.style.transform=`translate(${(Math.random()-.5)*2.5}px,${(Math.random()-.5)*1.2}px)`;setTimeout(sh,38);};sh();
-    addLog('¡COLISIÓN! S'+ev.sector,'lw');
-  }
-  if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
-  if(ev.type==='NODE_DOWN')addLog('S'+ev.sectorId+' CAÍDO','lw');
-  if(ev.type==='PLAYER_JOINED'&&ev.color)carMats[ev.carId]=ev.color;
-  if(ev.type==='PLAYER_LEFT'){
-    if(cars[ev.carId]){cars[ev.carId].getChildMeshes().forEach(m=>m.dispose());cars[ev.carId].dispose();delete cars[ev.carId];}
-    if(window.AC&&window.AC[ev.carId])delete window.AC[ev.carId]; // ← FIX: si no, queda "fantasma" en la clasificación
-  }
-  if(ev.vectorClock)g('vc').textContent='VC ['+ev.vectorClock+']';
+function onHandoffEvent(ev){
+  if(ev.carId!==myId)return;
+  g('sl').textContent='SECTOR S'+ev.toSector;
+  if(ev.toSector===1&&ev.fromSector===3){myLap++;g('ln').textContent=myLap;addLog('Vuelta '+myLap+'!','lg2');}
+  else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
+}
+function onCollisionEvent(ev){
+  if(ev.carA!==myId&&ev.carB!==myId)return;
+  g('cf').style.opacity='1';setTimeout(()=>g('cf').style.opacity='0',160);
+  let n=0;
+  const sh=()=>{
+    if(n++>6){canvas.style.transform='none';return;}
+    canvas.style.transform=`translate(${(rnd()-.5)*2.5}px,${(rnd()-.5)*1.2}px)`;
+    setTimeout(sh,38);
+  };
+  sh();
+  addLog('¡COLISIÓN! S'+ev.sector,'lw');
+}
+function onPlayerLeftEvent(ev){
+  if(cars[ev.carId]){cars[ev.carId].getChildMeshes().forEach(m=>m.dispose());cars[ev.carId].dispose();delete cars[ev.carId];}
+  if(window.AC&&window.AC[ev.carId])delete window.AC[ev.carId]; // ← FIX: si no, queda "fantasma" en la clasificación
+}
+function refreshNodeStatus(ev){
   if(ev.type==='NODE_DOWN')ns[ev.sectorId]='d';
   if(ev.type==='LEADER_ELECTED'){Object.keys(ns).forEach(k=>{if(ns[k]!=='d')ns[k]='ok';});ns[ev.leader]='l';}
   g('nds').innerHTML=[1,2,3].map(i=>`<div class="nn ns-${ns[i]}"><span class="nd"></span> S${i}${ns[i]==='l'?'<span class="nb">L</span>':''}${ns[i]==='d'?'<span class="nb nb2">!</span>':''}</div>`).join('');
+}
+socket.on('race:event',ev=>{
+  if(ev.type==='HANDOFF')onHandoffEvent(ev);
+  if(ev.type==='COLLISION')onCollisionEvent(ev);
+  if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
+  if(ev.type==='NODE_DOWN')addLog('S'+ev.sectorId+' CAÍDO','lw');
+  if(ev.type==='PLAYER_JOINED'&&ev.color)carMats[ev.carId]=ev.color;
+  if(ev.type==='PLAYER_LEFT')onPlayerLeftEvent(ev);
+  if(ev.vectorClock)g('vc').textContent='VC ['+ev.vectorClock+']';
+  refreshNodeStatus(ev);
 });
 window.addEventListener('gamepadconnected',e=>{g('gpSt').textContent='Mando: '+e.gamepad.id.slice(0,18);g('gpSt').className='gpst ok';g('gpb').textContent='Mando OK';g('gpb').className='gp ok';});
 
 // ── INPUT ────────────────────────────────────────────────────
 const held=new Set();
-document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key==='Escape'&&gameState==='racing'){showPause();return;}held.add(e.key);});
+document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)){e.preventDefault();} if(e.key==='Escape'&&gameState==='racing'){showPause();return;} held.add(e.key);});
 document.addEventListener('keyup',e=>held.delete(e.key));
+function keysHeld(){
+  return {
+    up: held.has('ArrowUp')||held.has('w')||held.has('W'),
+    dn: held.has('ArrowDown')||held.has('s')||held.has('S'),
+    lt: held.has('ArrowLeft')||held.has('a')||held.has('A'),
+    rt: held.has('ArrowRight')||held.has('d')||held.has('D'),
+  };
+}
+function applyGamepadInput(dir){
+  const gp=Array.from(navigator.getGamepads()).find(Boolean);
+  if(!gp)return dir;
+  const rv=(gp.axes[5]!=null?(gp.axes[5]+1)/2:0)||(gp.buttons[7]?.value||0);
+  const lv=(gp.axes[4]!=null?(gp.axes[4]+1)/2:0)||(gp.buttons[6]?.value||0);
+  const ax=gp.axes[0]||0;
+  return {
+    up: dir.up||rv>.15||gp.buttons[0]?.pressed,
+    dn: dir.dn||lv>.15||gp.buttons[1]?.pressed,
+    lt: dir.lt||ax<-.2||gp.buttons[14]?.pressed,
+    rt: dir.rt||ax>.2||gp.buttons[15]?.pressed,
+  };
+}
+function paintDpad(dir){
+  [{v:dir.up,id:'bA'},{v:dir.dn,id:'bB'},{v:dir.lt,id:'bL'},{v:dir.rt,id:'bR'}]
+    .forEach(({v,id})=>{const b=document.getElementById(id);if(b)b.classList.toggle('pr',v);});
+}
+function sendDirCommands(dir){
+  if(dir.up)cmd('accelerate');
+  if(dir.dn)cmd('brake');
+  if(dir.lt)cmd('steerLeft');
+  if(dir.rt)cmd('steerRight');
+}
 setInterval(()=>{
   if(gameState!=='racing'||!myId)return;
-  let up=held.has('ArrowUp')||held.has('w')||held.has('W');
-  let dn=held.has('ArrowDown')||held.has('s')||held.has('S');
-  let lt=held.has('ArrowLeft')||held.has('a')||held.has('A');
-  let rt=held.has('ArrowRight')||held.has('d')||held.has('D');
-  const gp=Array.from(navigator.getGamepads()).find(x=>x);
-  if(gp){const rv=(gp.axes[5]!=null?(gp.axes[5]+1)/2:0)||(gp.buttons[7]?.value||0);
-    const lv=(gp.axes[4]!=null?(gp.axes[4]+1)/2:0)||(gp.buttons[6]?.value||0);const ax=gp.axes[0]||0;
-    if(rv>.15||gp.buttons[0]?.pressed)up=true;if(lv>.15||gp.buttons[1]?.pressed)dn=true;
-    if(ax<-.2||gp.buttons[14]?.pressed)lt=true;if(ax>.2||gp.buttons[15]?.pressed)rt=true;}
-  [{v:up,id:'bA'},{v:dn,id:'bB'},{v:lt,id:'bL'},{v:rt,id:'bR'}].forEach(({v,id})=>{const b=document.getElementById(id);if(b)b.classList.toggle('pr',v);});
-  if(up)cmd('accelerate');if(dn)cmd('brake');if(lt)cmd('steerLeft');if(rt)cmd('steerRight');
+  const dir=applyGamepadInput(keysHeld());
+  paintDpad(dir);
+  sendDirCommands(dir);
 },100);
 ['bA','bB','bL','bR'].forEach((id,i)=>{
   const acts=['accelerate','brake','steerLeft','steerRight'];
-  const b=document.getElementById(id);if(!b)return;let itv=null;
+  const b=document.getElementById(id);
+  if(!b)return;
+  let itv=null;
   const start=()=>{cmd(acts[i]);itv=setInterval(()=>cmd(acts[i]),100);};
   const stop=()=>{clearInterval(itv);itv=null;};
   b.addEventListener('touchstart',e=>{e.preventDefault();start();},{passive:false});
@@ -951,8 +997,32 @@ socket.on('connect_error',(err)=>{
 });
 
 // ── HUD ──────────────────────────────────────────────────────
-function buildRPM(){const r=g('rr');if(!r)return;r.innerHTML='';for(let i=0;i<20;i++){const d=document.createElement('div');d.className='rs';d.id='rs'+i;d.style.background='#0a0a18';r.appendChild(d);}}
-function updateRPM(s){const p=Math.min(1,s/300);for(let i=0;i<20;i++){const sg=g('rs'+i);if(!sg)continue;const t=i/20;sg.style.background=t<p?(t<.62?'#27ae60':t<.82?'#f39c12':'#e10600'):'#0a0a18';}}
+function buildRPM(){
+  const r=g('rr');
+  if(!r)return;
+  r.innerHTML='';
+  for(let i=0;i<20;i++){const d=document.createElement('div');d.className='rs';d.id='rs'+i;d.style.background='#0a0a18';r.appendChild(d);}
+}
+function rpmColor(t,p){
+  if(t>=p)return '#0a0a18';
+  if(t<.62)return '#27ae60';
+  if(t<.82)return '#f39c12';
+  return '#e10600';
+}
+function updateRPM(s){
+  const p=Math.min(1,s/300);
+  for(let i=0;i<20;i++){
+    const sg=g('rs'+i);
+    if(!sg)continue;
+    const t=i/20;
+    sg.style.background=rpmColor(t,p);
+  }
+}
+function badgeFor(isMe,isBot){
+  if(isMe)return '<span class="sy">TÚ</span>';
+  if(isBot)return '<span class="sbt">BOT</span>';
+  return '';
+}
 function updateHUD(){
   if(!myId||!window.AC||Object.keys(window.AC).length===0)return;
   const me=window.AC[myId];if(me){mySpd=Math.round((me.speed||0)*60);g('spn').textContent=mySpd;updateRPM(mySpd);}
@@ -961,12 +1031,12 @@ function updateHUD(){
   if(rank>0){g('pn').textContent=rank;
     g('pn').style.color=['','#ffd700','#c0c0c0','#cd7f32'][rank]||'#888';
     const sf=['','1ER','2DO','3RO','4TO','5TO','6TO','7MO'][rank];
-    if(g('ps'))g('ps').textContent=sf||rank+'TO';}
+    if(g('ps')){g('ps').textContent=sf||rank+'TO';}}
   g('stl').innerHTML=sorted.slice(0,8).map((c,i)=>{
     const r=i+1,pc=['p1','p2','p3','pn'],isMe=c.carId===myId;
     const col=isMe?myCol:(carMats[c.carId]||'#888');
     const isBot=c.carId&&c.carId.startsWith('bot_');
-    return`<div class="sr${isMe?' me':''}"><span class="sp2 ${pc[Math.min(r-1,3)]}">${r}</span><span class="sn" style="color:${col}">${(c.name||c.carId).slice(0,9)}</span><span class="ss">${Math.round((c.speed||0)*60)}</span>${isMe?'<span class="sy">TÚ</span>':isBot?'<span class="sbt">BOT</span>':''}</div>`;
+    return`<div class="sr${isMe?' me':''}"><span class="sp2 ${pc[Math.min(r-1,3)]}">${r}</span><span class="sn" style="color:${col}">${(c.name||c.carId).slice(0,9)}</span><span class="ss">${Math.round((c.speed||0)*60)}</span>${badgeFor(isMe,isBot)}</div>`;
   }).join('');}
 
 // ── START LIGHTS ─────────────────────────────────────────────
@@ -987,10 +1057,15 @@ function cmd(a){
   myVC[3]++;socket.emit('car:command',{action:a,vectorClock:[...myVC]});
   g('vc').textContent='VC ['+myVC+']';
   console.log('[cmd] enviado #'+cmdCount+':',a);
-  const dbg=g('cmdDbg');if(dbg)dbg.textContent='✅ Comandos enviados: '+cmdCount+' (ultimo: '+a+')';
+  const dbg=g('cmdDbg');if(dbg){dbg.textContent='✅ Comandos enviados: '+cmdCount+' (ultimo: '+a+')';}
 }
 function g(id){return document.getElementById(id);}
-function addLog(msg,cls='li'){const el=g('el');if(!el)return;el.innerHTML=`<div class="le ${cls}">[${new Date().toLocaleTimeString()}] ${msg}</div>`+el.innerHTML;if(el.children.length>5)el.lastElementChild.remove();}
+function addLog(msg,cls='li'){
+  const el=g('el');
+  if(!el)return;
+  el.innerHTML=`<div class="le ${cls}">[${new Date().toLocaleTimeString()}] ${msg}</div>`+el.innerHTML;
+  if(el.children.length>5){el.lastElementChild.remove();}
+}
 </script>
 </body>
 </html>

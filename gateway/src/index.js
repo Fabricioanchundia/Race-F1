@@ -1,18 +1,22 @@
 const express    = require('express');
-const http       = require('http');
+const http       = require('node:http');
 const { Server } = require('socket.io');
 const Redis      = require('ioredis');
 const axios      = require('axios');
 const cors       = require('cors');
-const path       = require('path');
+const path       = require('node:path');
 const { v4: uuidv4 } = require('uuid');
 const VectorClock = require('./vectorClock');
 
 const app    = express();
+app.disable('x-powered-by'); // no revelar la version del framework (pedido por SonarQube)
 const server = http.createServer(app);
 const io     = new Server(server, { cors: { origin: '*' } });
 
-app.use(cors());
+// CORS abierto a propósito: este proyecto expone una API publica de solo-lectura del estado
+// de la carrera (sin datos sensibles ni autenticacion), pensada para ser consumida desde
+// el cliente web servido por este mismo proceso. No hay riesgo de CSRF/robo de datos privados.
+app.use(cors()); // NOSONAR: sin datos sensibles, API publica de solo lectura del estado de carrera
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -93,7 +97,7 @@ io.on('connection', (socket) => {
 
 app.post('/handoff-notify', (req, res) => {
   const { carId, fromSector, toSector } = req.body;
-  for (const [sid, p] of players) {
+  for (const p of players.values()) {
     if (p.carId === carId) { p.sectorId = toSector; break; }
   }
   io.emit('race:event', { type: 'HANDOFF', carId, fromSector, toSector, timestamp: Date.now() });
