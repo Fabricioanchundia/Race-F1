@@ -33,13 +33,13 @@ const hb = new HeartbeatMonitor(SECTOR_ID, redis, async (downId) => {
   if (SECTOR_ID > downId) await bully.startElection(redisPub);
 });
 
-// Grilla de salida tipo "kart": 2 autos por fila, en zigzag, escalonados hacia atrás.
-// Se usa para bots y para jugadores que llegan antes de que arranque la carrera, así
-// todos aparecen ordenados en su lugar (como en Mario Kart) en vez de desperdigados.
+// Grilla de salida tipo "kart": 2 autos por fila, en zigzag, escalonados hacia atrás,
+// bien pegados a la línea de meta (antes llegaba a 24 unidades de distancia, se veía
+// como si arrancaran en cualquier parte en vez de justo detrás de la meta).
 function gridSlot(i){
   const row = Math.floor(i/2);
   const lane = i%2===0 ? -0.32 : 0.32;
-  return { position: Math.max(0, 24 - row*6), lane };
+  return { position: Math.max(0, 15 - row*3), lane };
 }
 const BOTS = [
   {id:'bot_hamilton', name:'Hamilton', color:'#00d2be', targetSpd:3.0},
@@ -57,22 +57,35 @@ if (SECTOR_ID === 1) {
 let raceStarted = false; // true desde que se sueltan los bots — se lo decimos a quien se una después
 let waitingQueue = [];   // jugadores que llegaron con la carrera ya en marcha: esperan la próxima ronda
 let queueSince = null;   // cuándo empezó a esperar el primero de la cola (para el límite de seguridad)
+
+// Duración de la secuencia de luces en el cliente (ver runLights() en index.html):
+// 300ms inicial + 5 luces x 600ms + 800ms "GO" + 600ms para ocultar la barra = 4700ms.
+// Los bots deben arrancar EXACTAMENTE en ese instante, no antes.
+const LIGHTS_DURATION_MS = 4700;
+
+// BUG ARREGLADO: antes esta función soltaba los bots en el MISMO instante en que se
+// avisaba RACE_START — pero el cliente todavía tarda ~4.7s en mostrar la secuencia de
+// luces antes de dejar reaccionar al jugador. En ese hueco, los bots ya estaban en
+// movimiento y podían chocar al jugador mientras seguía parado esperando el "GO!".
+// Ahora se separa en dos pasos: se avisa YA (para que todos vean las luces juntos, al
+// mismo tiempo real), pero los bots recién arrancan cuando ese mismo tiempo ya pasó.
+function releaseBots() {
+  redisPub.publish('race:events', JSON.stringify({type:'RACE_START',circuit:currentCircuit,timestamp:Date.now()}));
+  console.log('[Bots] Luces arrancando para todos...');
+  setTimeout(() => {
+    raceStarted = true;
+    for (const [,car] of cars) {
+      if (car.isBot) car.ready = true;
+    }
+    console.log('[Bots] ¡Arrancaron de verdad!');
+  }, LIGHTS_DURATION_MS);
+}
+
 // BUG ARREGLADO: antes cada jugador elegía su circuito solo del lado del cliente (puro
 // cosmético) — dos jugadores en la misma carrera podían ver formas de pista totalmente
-// distintas entre sí, aunque compartieran el mismo espacio físico (posición 0-100). Ahora
-// el circuito de la ronda lo decide quien la inicia, y todos los que se suman (aunque hayan
-// elegido otro circuito en su propio menú) se sincronizan con ese mismo, vía la respuesta
-// del registro y el evento RACE_START.
+// distintas, aunque compartieran el mismo espacio físico. Ahora el circuito de la ronda
+// lo decide quien la inicia, y todos los que se suman se sincronizan con ese mismo.
 let currentCircuit = null; // null = todavía nadie decidió el de esta ronda
-
-function releaseBots() {
-  raceStarted = true;
-  for (const [,car] of cars) {
-    if (car.isBot) car.ready = true;
-  }
-  redisPub.publish('race:events', JSON.stringify({type:'RACE_START',circuit:currentCircuit,timestamp:Date.now()}));
-  console.log('[Bots] ¡Arrancaron!');
-}
 
 // Coloca un piloto en la grilla de salida (usado tanto para el registro normal como
 // para cuando se libera la cola de espera al empezar una nueva ronda). Si todavía nadie
@@ -136,6 +149,11 @@ async function updateCarPhysics(carId, car) {
     // 100ms, o sea se recentraba solo en ~1s) -- eso deshacía la separación lograda tras
     // chocar, y los autos volvían a juntarse y chocar en bucle infinito sin poder avanzar.
     car.lane = (car.lane||0) * .992;
+    // BUG ARREGLADO: antes, una vez que acelerabas, la velocidad se quedaba pegada ahí
+    // para siempre (nunca bajaba sola) hasta que frenaras a mano -- se sentía ilógico,
+    // como si el auto siguiera "acelerando" solo. Ahora hay una fricción natural leve
+    // (resistencia del aire/rodadura), como en un auto real.
+    car.speed = Math.max(0, car.speed - 0.025);
   }
   car.position = Number.parseFloat((car.position + car.speed * .1).toFixed(2));
   if (car.position >= RANGE[SECTOR_ID].max) {

@@ -689,27 +689,28 @@ function buildTrack(){
       cx.fillStyle=((xx/sq+yy/sq)%2===0)?'#fff':'#0a0a0a';cx.fillRect(xx,yy,sq,sq);
     }
     ckTex.update();
-    const ckMat=new BABYLON.StandardMaterial('ckMat',scene);ckMat.diffuseTexture=ckTex;ckMat.emissiveColor=new C3(.25,.25,.25);
-    const line=BABYLON.MeshBuilder.CreateBox('finishLine',{width:RW_H*2+KW*2+.6,height:.1,depth:1.1},scene);
+    const ckMat=new BABYLON.StandardMaterial('ckMat',scene);ckMat.diffuseTexture=ckTex;ckMat.emissiveColor=new C3(.3,.3,.3);
+    // Franja a cuadros más ancha en el piso (antes 1.1 de profundidad, casi no se notaba)
+    const line=BABYLON.MeshBuilder.CreateBox('finishLine',{width:RW_H*2+KW*2+.6,height:.1,depth:2.4},scene);
     line.material=ckMat;line.position.set(info.x,0.07,info.z);line.rotation.y=info.angle+Math.PI/2;
-    // Pórtico sobre la pista, con letrero META (como el gantry de una pista real)
+    // Pórtico sobre la pista, con letrero META — más grande y alto (antes se veía chico)
     const postMat=new BABYLON.StandardMaterial('postMat',scene);postMat.diffuseColor=new C3(.85,.85,.9);postMat.specularColor=new C3(.3,.3,.3);
-    const gW=RW_H*2+KW*2+2,gH=6.4;
+    const gW=RW_H*2+KW*2+2,gH=9.5;
     [-1,1].forEach(sd=>{
-      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.4,height:gH,tessellation:10},scene);
+      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.6,height:gH,tessellation:10},scene);
       post.material=postMat;
       post.position.set(info.x+info.nx*sd*(gW/2),gH/2,info.z+info.nz*sd*(gW/2));
       shadowGen.addShadowCaster(post);
     });
-    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.5,depth:.5},scene);
+    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.7,depth:.7},scene);
     beam.material=postMat;beam.position.set(info.x,gH,info.z);beam.rotation.y=info.angle+Math.PI/2;
     shadowGen.addShadowCaster(beam);
-    const banTex=new BABYLON.DynamicTexture('banTex',{width:512,height:96},scene);
-    const bx2=banTex.getContext();bx2.fillStyle='#e10600';bx2.fillRect(0,0,512,96);
-    bx2.fillStyle='#fff';bx2.font='bold 60px Segoe UI';bx2.textAlign='center';bx2.textBaseline='middle';
-    bx2.fillText('META',256,50);banTex.update();
-    const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.4,.05,.05);banMat.backFaceCulling=false;
-    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.7,height:1.5},scene);
+    const banTex=new BABYLON.DynamicTexture('banTex',{width:768,height:160},scene);
+    const bx2=banTex.getContext();bx2.fillStyle='#e10600';bx2.fillRect(0,0,768,160);
+    bx2.fillStyle='#fff';bx2.font='bold 100px Segoe UI';bx2.textAlign='center';bx2.textBaseline='middle';
+    bx2.fillText('META',384,84);banTex.update();
+    const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.5,.08,.08);banMat.backFaceCulling=false;
+    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.75,height:2.6},scene);
     banner.material=banMat;banner.position.set(info.x,gH-1.2,info.z);banner.rotation.y=info.angle+Math.PI/2;
   })();
   // Vallas publicitarias: mezcla de colores sólidos + vallas con el logo "RACESYNC"
