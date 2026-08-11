@@ -23,7 +23,28 @@ const RANGE = { 1:{min:0,max:33}, 2:{min:33,max:66}, 3:{min:66,max:100} };
 
 const redis    = new Redis(REDIS_URL);
 const redisPub = new Redis(REDIS_URL);
+// Suscriptor dedicado (ioredis exige una conexión separada para modo subscribe).
+// Se usa para coordinar el reseteo de bots entre los 3 procesos: antes, si un bot
+// estaba físicamente de tránsito por sector2/3 justo cuando sector1 reseteaba la
+// ronda, quedaba un bot "fantasma" ahí que sector1 no podía tocar desde su propio
+// Map local. Ahora sector1 avisa por Redis a TODOS los sectores, y cada uno limpia
+// cualquier bot que tenga en su propio Map local al recibir el aviso.
+const redisSub = new Redis(REDIS_URL);
 const cars     = new Map();
+
+redisSub.subscribe('sector:reset-bots', (err) => {
+  if (err) console.error(`[S${SECTOR_ID}] Error suscribiendo a sector:reset-bots: ${err.message}`);
+});
+redisSub.on('message', (channel, raw) => {
+  if (channel !== 'sector:reset-bots') return;
+  const data = JSON.parse(raw);
+  if (data.sectorId === SECTOR_ID) return; // el que originó el aviso ya se encargó de los suyos
+  let purged = 0;
+  for (const id of [...cars.keys()]) {
+    if (id.startsWith('bot_')) { cars.delete(id); purged++; }
+  }
+  if (purged > 0) console.log(`[S${SECTOR_ID}] ${purged} bot(s) fantasma descartados (estaban de tránsito al resetear la ronda)`);
+});
 
 let playerJoined = false;  // ← bots esperan al primer jugador
 
@@ -103,11 +124,9 @@ function placeOnGrid(carId, name, color, vectorClock, circuit) {
 // Arranca una nueva ronda para todos los que estaban esperando en cola: resetea los
 // bots a la grilla, saca cualquier auto humano que haya quedado (fantasmas de la ronda
 // anterior) y ubica a los de la cola, todos juntos, como si fuera una carrera nueva.
-// LIMITACIÓN CONOCIDA: si justo en este instante un bot está físicamente de tránsito
-// por el sector 2 o 3 (procesos separados), esta función no lo puede tocar desde acá —
-// puede causar un pequeño glitch visual en su próximo handoff de vuelta a este sector.
-// Coordinar bots entre los 3 procesos vía Redis sería la solución completa, pero excede
-// el alcance de este arreglo puntual.
+// Si justo en este instante un bot está físicamente de tránsito por el sector 2 o 3
+// (procesos separados), se avisa por Redis (canal 'sector:reset-bots') para que ese
+// sector lo descarte de su propio Map local también — ver el subscriber arriba.
 function startNextWave() {
   cars.clear(); // limpia bots y cualquier humano que haya quedado (fantasma de la ronda anterior)
   currentCircuit = null; // el primero de la cola vuelve a decidir el circuito de esta ronda
@@ -116,6 +135,7 @@ function startNextWave() {
     cars.set(b.id,{name:b.name,color:b.color,position:slot.position,speed:0,lane:slot.lane,isBot:true,targetSpd:b.targetSpd,ready:false});
   });
   raceStarted = false;
+  redisPub.publish('sector:reset-bots', JSON.stringify({sectorId:SECTOR_ID,timestamp:Date.now()}));
   const toRelease = waitingQueue; waitingQueue = []; queueSince = null;
   toRelease.forEach(p => placeOnGrid(p.carId, p.name, p.color, p.vectorClock, p.circuit));
   console.log(`[Bots] Nueva ronda: ${toRelease.length} piloto(s) en cola pasan a la grilla (circuito ${currentCircuit})`);
@@ -198,11 +218,18 @@ async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
 // Evalúa un solo par de autos: ¿deben chocar? si sí, los separa y aplica la penalización
 async function handlePair(idA, cA, idB, cB, hit, now) {
   if (hit.has(idA)||hit.has(idB)) return;
+  // El servidor es la autoridad del inicio de carrera: mientras la ronda no arrancó de
+  // verdad (raceStarted===false), no puede haber NINGUNA colisión en la grilla. El escudo
+  // de abajo (spawnUntil, 4s) no alcanza por sí solo: la espera real hasta que arranca la
+  // carrera puede llegar a 9.7s (5s de espera + 4.7s de luces) cuando se libera la cola,
+  // dejando una ventana de ~5.7s sin protección si solo se depende de ese temporizador.
+  // Limitado al sector 1 a propósito: ahí es donde existen los bots y la grilla; en
+  // sectores 2 y 3 los autos que llegan ya están corriendo de verdad.
+  if (SECTOR_ID===1 && !raceStarted) return;
   // Un bot que AÚN NO arrancó (esperando en la grilla) no debe chocar con nadie —
   // si no, el jugador nace pegado a él y queda atrapado sin poder acelerar nunca.
   if ((cA.isBot && !cA.ready) || (cB.isBot && !cB.ready)) return;
-  // Auto recién registrado (jugador que entra a una carrera ya en marcha) —
-  // inmunidad breve para que le dé tiempo a arrancar antes de que lo choquen
+  // Auto recién registrado — inmunidad breve extra (respaldo, ver guard de arriba)
   if ((cA.spawnUntil && now < cA.spawnUntil) || (cB.spawnUntil && now < cB.spawnUntil)) return;
   // Enfriamiento por auto (no solo por pareja) — ver nota en applyCollisionPenalty
   if ((cA.hitUntil && now < cA.hitUntil) || (cB.hitUntil && now < cB.hitUntil)) return;

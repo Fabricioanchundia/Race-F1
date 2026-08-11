@@ -349,6 +349,10 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 //  RACESYNC F1 — Babylon.js 3D · Versión limpia y funcional
 // ════════════════════════════════════════════════════════════
 
+// Herramientas de diagnóstico (panel de "Comandos enviados", etc.) ocultas por
+// defecto en producción normal. Se activan agregando ?debug=1 a la URL.
+const DEBUG_UI = new URLSearchParams(location.search).get('debug') === '1';
+
 // Único punto de aleatoriedad "insegura" de todo el archivo: se usa SOLO para
 // dibujar texturas/colores/posiciones decorativas (césped, multitud, edificios,
 // vibración de cámara). No se usa para nada relacionado a seguridad, sorteos,
@@ -768,16 +772,18 @@ function buildTrack(){
     // Franja a cuadros más ancha en el piso (antes 1.1 de profundidad, casi no se notaba)
     const line=BABYLON.MeshBuilder.CreateBox('finishLine',{width:RW_H*2+KW*2+.6,height:.1,depth:2.4},scene);
     line.material=ckMat;line.position.set(info.x,0.07,info.z);line.rotation.y=info.angle+Math.PI/2;
-    // Pórtico sobre la pista, con letrero META — más grande y alto (antes se veía chico)
+    // Pórtico sobre la pista, con letrero META — tamaño intermedio: visible mejor que
+    // el original, pero sin tapar la vista de la cámara al pasar cerca (bug confirmado
+    // con el video: el banner llegaba a ocupar ~1/3 de la pantalla)
     const postMat=new BABYLON.StandardMaterial('postMat',scene);postMat.diffuseColor=new C3(.85,.85,.9);postMat.specularColor=new C3(.3,.3,.3);
-    const gW=RW_H*2+KW*2+2,gH=9.5;
+    const gW=RW_H*2+KW*2+2,gH=7.5;
     [-1,1].forEach(sd=>{
-      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.6,height:gH,tessellation:10},scene);
+      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.5,height:gH,tessellation:10},scene);
       post.material=postMat;
       post.position.set(info.x+info.nx*sd*(gW/2),gH/2,info.z+info.nz*sd*(gW/2));
       shadowGen.addShadowCaster(post);
     });
-    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.7,depth:.7},scene);
+    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.55,depth:.55},scene);
     beam.material=postMat;beam.position.set(info.x,gH,info.z);beam.rotation.y=info.angle+Math.PI/2;
     shadowGen.addShadowCaster(beam);
     const banTex=new BABYLON.DynamicTexture('banTex',{width:768,height:160},scene);
@@ -785,8 +791,8 @@ function buildTrack(){
     bx2.fillStyle='#fff';bx2.font='bold 100px Segoe UI';bx2.textAlign='center';bx2.textBaseline='middle';
     bx2.fillText('META',384,84);banTex.update();
     const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.5,.08,.08);banMat.backFaceCulling=false;
-    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.75,height:2.6},scene);
-    banner.material=banMat;banner.position.set(info.x,gH-1.2,info.z);banner.rotation.y=info.angle+Math.PI/2;
+    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.5,height:1.7},scene);
+    banner.material=banMat;banner.position.set(info.x,gH-.9,info.z);banner.rotation.y=info.angle+Math.PI/2;
   })();
   // Vallas publicitarias: mezcla de colores sólidos + vallas con el logo "RACESYNC"
   const adColors=[new C3(.88,.02,0),new C3(0,.2,.63),new C3(.11,.11,.11),new C3(1,.48,0),new C3(.04,.48,.24)];
@@ -941,6 +947,7 @@ function disposeCircuitMeshes(){
 function rebuildCircuit(ci){
   try{
     curCircuit=ci;
+    window.curCircuit=ci; // expuesto solo para que las pruebas automatizadas puedan verificarlo
     disposeCircuitMeshes();
     buildTrack();
     buildStadium();
@@ -1032,9 +1039,22 @@ function updateCar(cid,frac,lane,color){
     isNew=true;
   }
   const wp=f2w(frac,lane);
-  cars[cid].position.set(wp.x,wp.y,wp.z);
-  cars[cid].rotation.y=wp.rotY;
-  if(cid===myId){myTangent={ttx:wp.ttx,ttz:wp.ttz};}
+  if(cid===myId){
+    // El propio auto del jugador salta directo: necesita respuesta instantánea,
+    // suavizarlo se sentiría como si los controles tuvieran retraso.
+    cars[cid].position.set(wp.x,wp.y,wp.z);
+    cars[cid].rotation.y=wp.rotY;
+    myTangent={ttx:wp.ttx,ttz:wp.ttz};
+  } else {
+    // Autos remotos: NO se mueven instantáneamente a la posición nueva — se guarda
+    // como "objetivo" y el loop de render (registerBeforeRender, cada frame) los va
+    // acercando de a poco. El servidor sigue siendo la única fuente de verdad de la
+    // posición real; esto solo suaviza CÓMO se dibuja, cada 100ms, entre un dato y el
+    // siguiente — antes el auto "saltaba" de golpe a cada actualización del servidor,
+    // sobre todo notorio al cruzar de sector (handoff).
+    if(isNew)cars[cid].position.set(wp.x,wp.y,wp.z); // recién creado: sin nada que interpolar todavía
+    cars[cid]._target={x:wp.x,y:wp.y,z:wp.z,rotY:wp.rotY};
+  }
   // Aparición suave: crece desde chico en vez de aparecer de golpe a tamaño completo
   if(isNew){
     cars[cid].scaling.set(.05,.05,.05);
@@ -1055,6 +1075,23 @@ let cinT=0,gameState='loading';
 scene.registerBeforeRender(()=>{
   // Girar ruedas de todos los autos
   Object.values(cars).forEach(c=>{if(c&&c._tires)c._tires.forEach(t=>t.rotation.x+=.2);});
+
+  // Suavizado de autos remotos: acercarlos de a poco a su posición objetivo en vez de
+  // saltar de golpe cada 100ms (ver nota en updateCar). El auto propio del jugador NO
+  // pasa por acá, ya se movió instantáneo arriba.
+  Object.entries(cars).forEach(([cid,c])=>{
+    if(cid===myId||!c||!c._target)return;
+    const t=c._target,LERP=0.28; // converge ~dentro de los 100ms entre updates del servidor
+    c.position.x+=(t.x-c.position.x)*LERP;
+    c.position.y+=(t.y-c.position.y)*LERP;
+    c.position.z+=(t.z-c.position.z)*LERP;
+    // Rotación: interpolar por el camino más corto (evita que gire "para el lado largo"
+    // al cruzar el punto donde el ángulo pasa de +π a -π)
+    let dr=t.rotY-c.rotation.y;
+    while(dr>Math.PI)dr-=Math.PI*2;
+    while(dr<-Math.PI)dr+=Math.PI*2;
+    c.rotation.y+=dr*LERP;
+  });
 
   // ÓRBITA CINEMÁTICA (title / circuit / select)
   if(gameState==='title'||gameState==='circuit'||gameState==='select'){
@@ -1120,7 +1157,7 @@ socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,ci
   syncCircuitWithServer(circuit);
   if(raceStarted)_raceAlreadyStarted=true;
   g('sel').style.display='none'; // ← FIX: esto faltaba, por eso se quedaba "Conectando..."
-  g('hud').style.display='block';g('ctl').style.display='grid';if(g('cmdDbg'))g('cmdDbg').style.display='block';
+  g('hud').style.display='block';g('ctl').style.display='grid';if(DEBUG_UI&&g('cmdDbg'))g('cmdDbg').style.display='block';
   g('sl').textContent='SECTOR S'+sectorId;
   addLog('Auto '+carId+' listo','lg2');
   // Pre-create player car IMMEDIATELY
@@ -1156,8 +1193,17 @@ socket.on('race:state',({sectorId,cars:sc})=>{
 
 const MAX_LAPS=5; // la carrera dura 5 vueltas — antes no tenía límite, nunca terminaba
 if(g('lnMax'))g('lnMax').textContent=MAX_LAPS;
+// Deduplicación de HANDOFF: sector-node reintenta el aviso al gateway si la RESPUESTA
+// se pierde por red, aunque el aviso original sí haya llegado y ya se haya procesado —
+// eso podía sumar la misma vuelta dos veces. Si el mismo cruce de sectores llega de
+// nuevo en menos de 2s, se ignora (una vuelta real no se completa en ese tiempo).
+let _lastHandoffSig=null,_lastHandoffAt=0;
 function onHandoffEvent(ev){
   if(ev.carId!==myId)return;
+  const sig=ev.fromSector+'>'+ev.toSector;
+  const now=Date.now();
+  if(sig===_lastHandoffSig&&now-_lastHandoffAt<2000)return; // aviso repetido (reintento de red)
+  _lastHandoffSig=sig;_lastHandoffAt=now;
   g('sl').textContent='SECTOR S'+ev.toSector;
   if(ev.toSector===1&&ev.fromSector===3){
     // Tiempo REAL de la vuelta que se acaba de completar (no inventado)
@@ -1263,7 +1309,7 @@ function onRaceStartEvent(ev){
     // ahora sí creamos el auto y arrancamos las luces, igual que todos los demás.
     _isQueued=false;
     g('waitRoom').style.display='none';
-    g('hud').style.display='block';g('ctl').style.display='grid';if(g('cmdDbg'))g('cmdDbg').style.display='block';
+    g('hud').style.display='block';g('ctl').style.display='grid';if(DEBUG_UI&&g('cmdDbg'))g('cmdDbg').style.display='block';
     const wp=f2w(1,0);
     cars[myId]=makeCar(myCol);playerCar=cars[myId];
     playerCar.position.set(wp.x,wp.y,wp.z);
@@ -1336,13 +1382,17 @@ setInterval(()=>{
   const acts=['accelerate','brake','steerLeft','steerRight'];
   const b=document.getElementById(id);
   if(!b)return;
-  let itv=null;
-  const start=()=>{cmd(acts[i]);itv=setInterval(()=>cmd(acts[i]),100);};
+  let itv=null,lastStart=0;
+  const start=()=>{lastStart=Date.now();cmd(acts[i]);itv=setInterval(()=>cmd(acts[i]),100);};
   const stop=()=>{clearInterval(itv);itv=null;};
   b.addEventListener('touchstart',e=>{e.preventDefault();start();},{passive:false});
   b.addEventListener('touchend',e=>{e.preventDefault();stop();});
   b.addEventListener('mousedown',start);b.addEventListener('mouseup',stop);b.addEventListener('mouseleave',stop);
-  b.addEventListener('click',()=>{cmd(acts[i]);}); // respaldo: garantiza al menos 1 comando por toque
+  // Respaldo para accesibilidad por teclado (Enter/Espacio en el botón enfocado no
+  // dispara mousedown/touchstart) -- pero si hubo un mousedown/touchstart hace muy
+  // poco en este mismo botón, este 'click' es solo el eco nativo del navegador tras
+  // ese mousedown+mouseup, no una activación nueva, así que se ignora para no duplicar.
+  b.addEventListener('click',()=>{if(Date.now()-lastStart>300)cmd(acts[i]);});
 });
 
 // ── NAVIGATION ───────────────────────────────────────────────
