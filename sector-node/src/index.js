@@ -198,11 +198,18 @@ async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
 // Evalúa un solo par de autos: ¿deben chocar? si sí, los separa y aplica la penalización
 async function handlePair(idA, cA, idB, cB, hit, now) {
   if (hit.has(idA)||hit.has(idB)) return;
+  // BUG ARREGLADO: el escudo de 4s de abajo (spawnUntil) expiraba mucho antes de que la
+  // carrera realmente arrancara (hasta 9.7s cuando se libera la cola de espera), dejando
+  // una ventana donde dos jugadores recién puestos en la grilla podían chocarse ENTRE SÍ
+  // antes del "¡GO!". Ahora se bloquea toda colisión en la grilla mientras la carrera no
+  // arrancó de verdad, sin importar cuánto dure esa espera. Limitado al sector 1 a propósito:
+  // ahí es donde existen los bots y la grilla; en sectores 2 y 3 los autos que llegan ya
+  // están corriendo de verdad (llegaron ahí en movimiento), sus choques deben seguir activos.
+  if (SECTOR_ID===1 && !raceStarted) return;
   // Un bot que AÚN NO arrancó (esperando en la grilla) no debe chocar con nadie —
   // si no, el jugador nace pegado a él y queda atrapado sin poder acelerar nunca.
   if ((cA.isBot && !cA.ready) || (cB.isBot && !cB.ready)) return;
-  // Auto recién registrado (jugador que entra a una carrera ya en marcha) —
-  // inmunidad breve para que le dé tiempo a arrancar antes de que lo choquen
+  // Auto recién registrado — inmunidad breve extra (respaldo, ver guard de arriba)
   if ((cA.spawnUntil && now < cA.spawnUntil) || (cB.spawnUntil && now < cB.spawnUntil)) return;
   // Enfriamiento por auto (no solo por pareja) — ver nota en applyCollisionPenalty
   if ((cA.hitUntil && now < cA.hitUntil) || (cB.hitUntil && now < cB.hitUntil)) return;
