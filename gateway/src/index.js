@@ -48,6 +48,20 @@ redisSub.on('message', (channel, raw) => {
   }
 });
 
+// Saca al jugador del mundo compartido de verdad: avisa el evento, borra su registro
+// local y le pide al sector que elimine su auto (no dejar "fantasma" chocando/en la clasificación).
+async function removePlayer(socketId) {
+  const player = players.get(socketId);
+  if (!player) return;
+  const clock = vc.tick();
+  await redisPub.publish('race:events', JSON.stringify({
+    type: 'PLAYER_LEFT', carId: player.carId, vectorClock: clock, timestamp: Date.now()
+  }));
+  players.delete(socketId);
+  console.log(`[Gateway] Auto ${player.carId} desconectado`);
+  axios.post(`${SECTORS[player.sectorId]}/car/remove`, { carId: player.carId }).catch(()=>{});
+}
+
 io.on('connection', (socket) => {
   console.log(`[Gateway] Cliente conectado: ${socket.id}`);
 
@@ -95,18 +109,22 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', async () => {
-    const player = players.get(socket.id);
-    if (!player) return;
-    const clock = vc.tick();
-    await redisPub.publish('race:events', JSON.stringify({
-      type: 'PLAYER_LEFT', carId: player.carId, vectorClock: clock, timestamp: Date.now()
-    }));
-    players.delete(socket.id);
-    console.log(`[Gateway] Auto ${player.carId} desconectado`);
-    // Eliminar de verdad el auto en el sector donde esté (no dejar "fantasma" chocando/en la clasificación)
-    axios.post(`${SECTORS[player.sectorId]}/car/remove`, { carId: player.carId }).catch(()=>{});
-  });
+  socket.on('disconnect', () => removePlayer(socket.id));
+});
+
+// BUG DEL AUTO FANTASMA: al recargar o cerrar la página, socket.io puede tardar hasta
+// ~20s (su pingTimeout por defecto) en darse cuenta de que el cliente se fue. En ese
+// tiempo, el jugador ya se re-registra con un auto NUEVO mientras el VIEJO sigue vivo
+// en el servidor — dos autos tuyos al mismo tiempo, chocando y duplicados en la
+// clasificación. Este endpoint lo llama el cliente con sendBeacon() justo antes de
+// cerrarse, así el auto se elimina al instante en vez de esperar el timeout.
+app.post('/player-leaving', express.text({ type: '*/*' }), (req, res) => {
+  let carId;
+  try { carId = JSON.parse(req.body).carId; } catch { return res.status(400).end(); }
+  for (const [socketId, p] of players) {
+    if (p.carId === carId) { removePlayer(socketId); break; }
+  }
+  res.status(204).end();
 });
 
 app.post('/handoff-notify', (req, res) => {

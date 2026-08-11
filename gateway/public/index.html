@@ -902,6 +902,15 @@ setTimeout(()=>{
 // ── SOCKET.IO ────────────────────────────────────────────────
 const socket=io();const ns={1:'ok',2:'ok',3:'ok'};
 
+// BUG DEL AUTO FANTASMA: si solo dependemos de que socket.io detecte la desconexión,
+// puede tardar ~20s, y en ese tiempo el auto viejo sigue vivo mientras uno se re-registra
+// con uno nuevo. 'pagehide' se dispara SIEMPRE al recargar o cerrar (más confiable que
+// 'beforeunload', sobre todo en celulares), y sendBeacon() garantiza que el aviso salga
+// aunque la página ya se esté cerrando.
+window.addEventListener('pagehide',()=>{
+  if(myId)navigator.sendBeacon('/player-leaving',JSON.stringify({carId:myId}));
+});
+
 let _raceAlreadyStarted=false; // se pone en true si el servidor dice que ya arrancó, o si llega el evento en vivo
 socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
