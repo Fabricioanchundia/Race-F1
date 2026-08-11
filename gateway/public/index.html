@@ -36,30 +36,51 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 #cs{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;
   justify-content:center;gap:16px;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,10,.55),rgba(0,0,0,.82));backdrop-filter:blur(10px);}
 .ch1{font-size:1.55rem;font-weight:900;letter-spacing:.15em;text-shadow:0 0 24px rgba(225,6,0,.6);}
-.ch2{font-size:.68rem;color:#666;letter-spacing:.16em;margin-top:-8px;}
-.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:min(720px,94vw);
+.ch1 .r{color:#e10600;}
+.ch2{font-size:.68rem;color:#8a8a8a;letter-spacing:.16em;margin-top:-8px;}
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:min(920px,94vw);
   background:rgba(8,6,18,.55);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:18px;
   box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);}
 .cc{font:inherit;color:inherit;background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.08);border-radius:16px;
-  padding:18px 12px 14px;text-align:center;cursor:pointer;transition:all .2s cubic-bezier(.2,.8,.3,1);
-  display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden;}
+  padding:14px 12px;text-align:center;cursor:pointer;transition:all .2s cubic-bezier(.2,.8,.3,1);
+  display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;overflow:hidden;}
 .cc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);transition:background .2s;}
 .cc:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18);box-shadow:0 12px 28px rgba(0,0,0,.45);}
-.cc.active{border-color:#e10600;box-shadow:0 0 0 1px rgba(225,6,0,.4),0 12px 32px rgba(225,6,0,.35);transform:translateY(-4px);}
-.cc.active::before{background:linear-gradient(90deg,#e10600,#ff6a30);}
-.cf{font-size:2.2rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}.cn{font-size:1.05rem;font-weight:900;letter-spacing:.1em;}
-.ck{font-size:.58rem;color:#666;letter-spacing:.02em;}
-.ci{font-size:.6rem;color:#b8b8b8;background:#252134;padding:3px 11px;border-radius:12px;margin-top:2px;}
-.cc canvas{border-radius:10px;border:1px solid rgba(255,255,255,.1);margin-top:6px;box-shadow:0 6px 16px rgba(0,0,0,.35);}
+.cc.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 12px 32px -6px var(--accent);transform:translateY(-4px);}
+.cc.active::before{background:linear-gradient(90deg,var(--accent),#fff);}
+.cbadge{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.12);color:#fff;font-size:.55rem;
+  font-weight:900;letter-spacing:.05em;padding:3px 7px;border-radius:6px;}
+.cf2{position:absolute;top:8px;right:10px;font-size:1.3rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
+.cn{font-size:1.05rem;font-weight:900;letter-spacing:.1em;margin-top:14px;}
+.ck{font-size:.58rem;color:#8a8a8a;letter-spacing:.02em;margin-bottom:2px;}
+.cc canvas{border-radius:10px;border:1px solid rgba(255,255,255,.1);box-shadow:0 6px 16px rgba(0,0,0,.35);width:100%;height:auto;}
+.cstats{width:100%;display:flex;flex-direction:column;gap:4px;margin-top:6px;}
+.cstat{display:flex;align-items:center;gap:5px;font-size:.6rem;color:#b8b8b8;background:#1a1828;padding:4px 9px;border-radius:9px;text-align:left;}
+.cstat span{font-size:.75rem;}
+.cdiff{display:flex;gap:3px;justify-content:center;margin-top:2px;}
+.cdiff i{width:22px;height:5px;border-radius:3px;background:rgba(255,255,255,.12);display:block;}
+.cdiff i.on{background:linear-gradient(90deg,#e10600,#ff6a30);}
+.cselbtn{width:100%;margin-top:8px;padding:10px;border-radius:10px;font-size:.68rem;font-weight:900;
+  letter-spacing:.08em;background:var(--accent);color:#fff;box-shadow:0 6px 18px -4px var(--accent);}
+.csFoot{display:flex;justify-content:space-between;align-items:center;width:min(920px,94vw);gap:10px;}
+.cstip{font-size:.6rem;color:#8a8a8a;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  padding:8px 14px;border-radius:10px;flex:1;}
 /* SELECT */
 #sel{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;
   justify-content:center;gap:12px;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,10,.55),rgba(0,0,0,.85));backdrop-filter:blur(10px);}
 .sh{font-size:1.45rem;font-weight:900;letter-spacing:.14em;text-shadow:0 0 22px rgba(225,6,0,.55);}
+.sh .r{color:#e10600;}
+.statBars{width:100%;display:flex;flex-direction:column;gap:8px;text-align:left;}
+.statRow{display:flex;flex-direction:column;gap:2px;}
+.statRow .lbl{display:flex;justify-content:space-between;font-size:.58rem;color:#8a8a8a;letter-spacing:.04em;}
+.statRow .lbl b{color:#fff;font-weight:900;}
+.statTrack{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;}
+.statFill{height:100%;border-radius:3px;background:linear-gradient(90deg,#e10600,#ff6a30);}
 .sb{display:flex;gap:18px;align-items:flex-start;width:min(720px,94vw);
   background:rgba(8,6,18,.55);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:18px;
   box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);}
 .sp{background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:18px;
-  text-align:center;min-width:185px;max-width:185px;box-shadow:0 10px 26px rgba(0,0,0,.4);}
+  text-align:center;min-width:210px;max-width:210px;box-shadow:0 10px 26px rgba(0,0,0,.4);}
 .spr{flex:1;display:flex;flex-direction:column;gap:9px;}
 .tg{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
 .tc{background:linear-gradient(160deg,rgba(18,14,34,.95),rgba(8,6,18,.95));border:2px solid rgba(255,255,255,.08);border-radius:13px;
@@ -179,49 +200,68 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 </div>
 <!-- CIRCUIT SELECT -->
 <div id="cs">
-  <div class="ch1">&#127942; ELIGE TU CIRCUITO</div>
-  <div class="ch2">Formula 1 World Championship · 2025</div>
+  <div class="ch1">&#127942; ELIGE <span class="r">TU</span> CIRCUITO</div>
+  <div class="ch2">&#127937;&#127937; FÓRMULA 1 WORLD CHAMPIONSHIP · 2025 &#127937;&#127937;</div>
   <div class="cg">
-    <button type="button" class="cc" id="c0" onclick="selC(0)">
-      <div class="cf2">&#127468;&#127463;</div>
+    <button type="button" class="cc" id="c0" onclick="selC(0)" style="--accent:#2266dd">
+      <div class="cbadge">GB</div><div class="cf2">&#127468;&#127463;</div>
       <div class="cn" style="color:#e10600">SILVERSTONE</div>
       <div class="ck">Gran Premio de Gran Bretaña</div>
-      <div class="ci">&#9737; Día · Clásico</div>
-      <canvas width="130" height="65" id="mc0"></canvas>
+      <canvas width="220" height="100" id="mc0"></canvas>
+      <div class="cstats">
+        <div class="cstat"><span>&#9737;</span>Día · Clásico</div>
+        <div class="cstat"><span>&#128207;</span>5.891 km</div>
+        <div class="cdiff" title="Balanceado"><i class="on"></i><i class="on"></i><i></i></div>
+      </div>
+      <div class="cselbtn">SELECCIONAR CIRCUITO &#8250;</div>
     </button>
-    <button type="button" class="cc" id="c1" onclick="selC(1)">
-      <div class="cf2">&#127470;&#127481;</div>
+    <button type="button" class="cc" id="c1" onclick="selC(1)" style="--accent:#ff8800">
+      <div class="cbadge">IT</div><div class="cf2">&#127470;&#127481;</div>
       <div class="cn" style="color:#ff5500">MONZA</div>
       <div class="ck">Gran Premio de Italia</div>
-      <div class="ci">&#9728; Atardecer · Rápido</div>
-      <canvas width="130" height="65" id="mc1"></canvas>
+      <canvas width="220" height="100" id="mc1"></canvas>
+      <div class="cstats">
+        <div class="cstat"><span>&#127749;</span>Atardecer · Rápido</div>
+        <div class="cstat"><span>&#128207;</span>5.793 km</div>
+        <div class="cdiff" title="Alta velocidad"><i class="on"></i><i class="on"></i><i></i></div>
+      </div>
+      <div class="cselbtn">SELECCIONAR CIRCUITO &#8250;</div>
     </button>
-    <button type="button" class="cc" id="c2" onclick="selC(2)">
-      <div class="cf2">&#127474;&#127464;</div>
+    <button type="button" class="cc" id="c2" onclick="selC(2)" style="--accent:#e10600">
+      <div class="cbadge">MC</div><div class="cf2">&#127474;&#127464;</div>
       <div class="cn" style="color:#4488ff">MONACO</div>
       <div class="ck">Grand Prix de Monaco</div>
-      <div class="ci">&#9790; Noche · Élite</div>
-      <canvas width="130" height="65" id="mc2"></canvas>
+      <canvas width="220" height="100" id="mc2"></canvas>
+      <div class="cstats">
+        <div class="cstat"><span>&#127769;</span>Noche · Élite</div>
+        <div class="cstat"><span>&#128207;</span>3.337 km</div>
+        <div class="cdiff" title="Máxima dificultad"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      </div>
+      <div class="cselbtn">SELECCIONAR CIRCUITO &#8250;</div>
     </button>
   </div>
-  <button class="gb" id="cgb" onclick="goSel()" disabled style="width:min(400px,88vw);opacity:.4;cursor:not-allowed">
-    &#128992;&nbsp;&nbsp;CONFIRMAR CIRCUITO
+  <button class="gb" id="cgb" onclick="goSel()" disabled style="width:min(420px,88vw);opacity:.4;cursor:not-allowed">
+    &#127937;&nbsp;&nbsp;CONFIRMAR CIRCUITO&nbsp;&#8250;
   </button>
-  <button class="bk" onclick="goTitle()">&#8592; Menú principal</button>
+  <div class="csFoot">
+    <div class="cstip">&#8505;&nbsp; Cada circuito ofrece una experiencia única. Elige sabiamente.</div>
+    <button class="bk" onclick="goTitle()">&#8592; Menú principal</button>
+  </div>
 </div>
 <!-- TEAM SELECT -->
 <div id="sel">
-  <div class="sh">&#127950; ELIGE TU PILOTO</div>
+  <div class="sh">&#127950; ELIGE TU <span class="r">PILOTO</span></div>
   <div class="sb">
-    <div class="sp"><canvas id="bcp" width="160" height="195"></canvas>
-      <div id="stn" style="font-size:1rem;font-weight:900;margin-top:8px;">Scuderia Ferrari</div>
-      <div id="stc" style="font-size:.65rem;color:#555;letter-spacing:.1em;">SF</div>
+    <div class="sp"><canvas id="bcp" width="160" height="150"></canvas>
+      <div id="stn" style="font-size:1rem;font-weight:900;margin-top:6px;">Scuderia Ferrari</div>
+      <div id="stmodel" style="font-size:.62rem;color:#e10600;font-weight:bold;letter-spacing:.08em;margin-bottom:10px;">SF-25</div>
+      <div id="statBars" class="statBars"></div>
     </div>
     <div class="spr">
       <div class="tg" id="tg"></div>
       <input class="ni" id="ni" placeholder="Nombre del piloto" aria-label="Nombre del piloto" maxlength="14">
       <div id="gpSt" class="gpst">&#127918; Sin control detectado</div>
-      <button class="gb" onclick="JR()">&#128992;&nbsp;&nbsp;ACELERAR AL GRID</button>
+      <button class="gb" onclick="JR()">&#127937;&nbsp;&nbsp;ACELERAR AL GRID&nbsp;&#8250;</button>
     </div>
   </div>
   <button class="bk" onclick="goCS()">&#8592; Cambiar circuito</button>
@@ -288,12 +328,12 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 function rnd(){return Math.random();} // NOSONAR
 
 const TEAMS=[
-  {name:'Scuderia Ferrari',col:'#e10600',ab:'SF',d1:'Leclerc',d2:'Hamilton'},
-  {name:'Oracle Red Bull', col:'#1e41ff',ab:'RB',d1:'Verstappen',d2:'Pérez'},
-  {name:'Mercedes-AMG',    col:'#00d2be',ab:'ME',d1:'Russell',d2:'Antonelli'},
-  {name:'McLaren F1',      col:'#ff8000',ab:'MC',d1:'Norris',d2:'Piastri'},
-  {name:'Aston Martin',    col:'#006f62',ab:'AM',d1:'Alonso',d2:'Stroll'},
-  {name:'Alpine F1',       col:'#0090ff',ab:'AL',d1:'Gasly',d2:'Doohan'},
+  {name:'Scuderia Ferrari',col:'#e10600',ab:'SF',d1:'Leclerc',d2:'Hamilton',model:'SF-25',stats:[90,88,92,89]},
+  {name:'Oracle Red Bull', col:'#1e41ff',ab:'RB',d1:'Verstappen',d2:'Pérez',model:'RB21',stats:[94,91,87,90]},
+  {name:'Mercedes-AMG',    col:'#00d2be',ab:'ME',d1:'Russell',d2:'Antonelli',model:'W16',stats:[88,89,90,91]},
+  {name:'McLaren F1',      col:'#ff8000',ab:'MC',d1:'Norris',d2:'Piastri',model:'MCL39',stats:[92,93,89,86]},
+  {name:'Aston Martin',    col:'#006f62',ab:'AM',d1:'Alonso',d2:'Stroll',model:'AMR25',stats:[85,86,91,88]},
+  {name:'Alpine F1',       col:'#0090ff',ab:'AL',d1:'Gasly',d2:'Doohan',model:'A525',stats:[83,84,86,85]},
 ];
 
 const CIRCS=[
@@ -380,10 +420,21 @@ TEAMS.forEach((t,i)=>{
     d.classList.add('active');selTeam=i;myCol=t.col;
     updateBigPreview();
     g('stn').textContent=t.name;g('stn').style.color=t.col;
-    g('stc').textContent=t.ab;
+    g('stmodel').textContent=t.model;g('stmodel').style.color=t.col;
   };
 });
 tg.children[0].classList.add('active');
+
+const STAT_LABELS=['VELOCIDAD MÁX.','ACELERACIÓN','MANEJO','FRENADO'];
+function updateStatBars(){
+  const sb=g('statBars');if(!sb)return;
+  const t=TEAMS[selTeam];
+  sb.innerHTML=STAT_LABELS.map((lbl,i)=>`
+    <div class="statRow">
+      <div class="lbl"><span>${lbl}</span><b>${t.stats[i]}</b></div>
+      <div class="statTrack"><div class="statFill" style="width:${t.stats[i]}%;background:linear-gradient(90deg,${t.col},#fff2)"></div></div>
+    </div>`).join('');
+}
 
 function updateBigPreview(){
   const bc=document.getElementById('bcp');if(!bc)return;
@@ -392,9 +443,10 @@ function updateBigPreview(){
   const bg=c.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);
   bg.addColorStop(0,t.col+'55');bg.addColorStop(1,'#050516');
   c.fillStyle=bg;c.fillRect(0,0,W,H);
-  drawMiniCar(c,t.col,W/2,H/2,.78);
+  drawMiniCar(c,t.col,W/2,H*.55,.78);
+  updateStatBars();
 }
-setTimeout(()=>{updateBigPreview();[0,1,2].forEach(i=>drawMiniCircuit('mc'+i,i));},100);
+setTimeout(()=>{updateBigPreview();g('stmodel').textContent=TEAMS[0].model;[0,1,2].forEach(i=>drawMiniCircuit('mc'+i,i));},100);
 
 // ── BABYLON.JS SETUP ─────────────────────────────────────────
 const canvas=document.getElementById('cv');
