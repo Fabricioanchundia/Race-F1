@@ -114,6 +114,7 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
   color:#fff;width:36px;height:36px;border-radius:8px;font-size:1rem;cursor:pointer;}
 #vc{font-family:monospace;font-size:.54rem;color:#8fd9ff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:5px;}
 #lp{font-size:.76rem;color:#9a9a9a;}#lp b{color:#fff;}
+#rt{font-size:.68rem;color:#e10600;font-weight:900;font-variant-numeric:tabular-nums;margin-top:1px;}
 #bp{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;}
 #pn{font-size:2.8rem;font-weight:900;color:#f39c12;line-height:1;text-shadow:0 0 24px rgba(243,156,18,.7);}
 #ps{font-size:.75rem;color:#f39c12;letter-spacing:.1em;}
@@ -126,6 +127,18 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .sn{flex:1;color:#bbb;}.ss{font-size:.64rem;color:#e10600;font-weight:bold;}
 .sy{font-size:.5rem;background:#450509;color:#ff4136;padding:1px 3px;border-radius:3px;}
 .sbt{font-size:.5rem;color:#bbb;background:rgba(30,30,30,.6);padding:1px 3px;border-radius:3px;}
+.dsBtn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;
+  border-radius:8px;padding:5px 8px;font-size:.85rem;cursor:pointer;pointer-events:all;margin-left:8px;}
+.dsBtn.on{background:rgba(225,6,0,.25);border-color:#e10600;}
+#distPanel{position:absolute;top:60px;right:8px;background:rgba(4,2,14,.95);backdrop-filter:blur(12px);
+  border:1px solid rgba(225,6,0,.25);border-radius:14px;padding:12px 14px;min-width:190px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:all;}
+#distTitle{font-size:.62rem;color:#ff4136;letter-spacing:.14em;font-weight:900;margin-bottom:8px;}
+#distSectors{margin-bottom:8px;}
+.distRow{display:flex;justify-content:space-between;gap:10px;font-size:.62rem;color:#8a8a8a;
+  padding:3px 0;border-top:1px solid rgba(255,255,255,.06);}
+.distRow b{color:#fff;font-weight:700;text-align:right;}
+.distRow b.ok{color:#27ae60;}
 #nd{position:absolute;bottom:80px;right:8px;background:rgba(4,2,14,.92);backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:7px 11px;}
 #ndt{font-size:.5rem;color:#868686;letter-spacing:.2em;margin-bottom:4px;}
@@ -279,16 +292,23 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 <!-- HUD -->
 <div id="hud">
   <div id="tb">
-    <div class="tll"><button id="pb" onclick="showPause()">&#9776;</button><div id="vc">VC [0,0,0,0]</div></div>
+    <div class="tll"><button id="pb" onclick="showPause()">&#9776;</button><div id="vc">VC [0,0,0,0]</div>
+      <button id="dsToggle" class="dsBtn" onclick="toggleDistPanel()" title="Sistema distribuido">&#128225;</button></div>
     <div id="bp"><div id="pn">#--</div><div id="ps">POSICIÓN</div></div>
     <div id="lp">VUELTA <b id="ln">1</b>/<span id="lnMax">5</span></div>
+    <div id="rt">--:--.---</div>
   </div>
   <div id="st"><div id="stt">CLASIFICACIÓN EN VIVO</div><div id="stl"></div></div>
-  <div id="nd"><div id="ndt">NODOS SECTOR</div><div id="nds">
-    <div class="nn"><span class="nd"></span> S1</div>
-    <div class="nn"><span class="nd"></span> S2</div>
-    <div class="nn"><span class="nd"></span> S3</div>
-  </div></div>
+  <!-- Panel del sistema distribuido: pensado para que se pueda mostrar durante la
+       demo/defensa y ocultar durante el juego normal para no molestar -->
+  <div id="distPanel" style="display:none">
+    <div id="distTitle">&#128225;&nbsp;SISTEMA DISTRIBUIDO</div>
+    <div id="distSectors"></div>
+    <div class="distRow"><span>LÍDER</span><b id="distLeader">—</b></div>
+    <div class="distRow"><span>HEARTBEAT</span><b id="distHb" class="ok">&#10003; ACTIVO</b></div>
+    <div class="distRow"><span>VECTOR CLOCK</span><b id="distVC">[0,0,0,0]</b></div>
+    <div class="distRow"><span>ÚLTIMO HANDOFF</span><b id="distHandoff">—</b></div>
+  </div>
   <div id="lg"><div id="el"></div></div>
   <div id="bb">
     <div id="spb"><div id="spn">0</div><div id="spu">KM/H</div></div>
@@ -411,6 +431,14 @@ function drawMiniCar(c,col,x,y,s){
 // Build team cards
 const tg=document.getElementById('tg');
 let selTeam=0,myCol='#e10600',myId=null,myVC=[0,0,0,0],myLap=1,mySpd=0,selCirc=-1;
+// Tiempos REALES (no inventados): se calculan de los timestamps reales de cuando
+// arranca la carrera y de cada HANDOFF de vuelta completa (S3→S1).
+let raceStartTime=null,lapStartTime=null,bestLapMs=null,lastLapMs=null;
+function fmtTime(ms){
+  if(ms==null)return'--:--.---';
+  const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000),mm=Math.floor(ms%1000);
+  return m+':'+String(s).padStart(2,'0')+'.'+String(mm).padStart(3,'0');
+}
 TEAMS.forEach((t,i)=>{
   const d=document.createElement('div');d.className='tc';d.style.setProperty('--c',t.col);
   const cv2=document.createElement('canvas');cv2.width=72;cv2.height=56;d.appendChild(cv2);
@@ -1057,6 +1085,7 @@ setTimeout(()=>{
 
 // ── SOCKET.IO ────────────────────────────────────────────────
 const socket=io();const ns={1:'ok',2:'ok',3:'ok'};
+if(g('distSectors'))g('distSectors').innerHTML=[1,2,3].map(i=>`<div class="nn ns-ok"><span class="nd"></span> S${i}</div>`).join('');
 
 // BUG DEL AUTO FANTASMA: si solo dependemos de que socket.io detecte la desconexión,
 // puede tardar ~20s, y en ese tiempo el auto viejo sigue vivo mientras uno se re-registra
@@ -1102,7 +1131,8 @@ socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,ci
   myTangent={ttx:wp.ttx,ttz:wp.ttz}; // para que la cámara ya sepa hacia dónde mirar desde el primer cuadro
   if(_raceAlreadyStarted){
     // La carrera ya está en marcha (te uniste tarde) — entrás directo, sin luces falsas
-    gameState='racing';addLog('🚥 Carrera en marcha — arrancaste sobre la marcha','lg2');
+    gameState='racing';raceStartTime=Date.now();lapStartTime=Date.now();
+    addLog('🚥 Carrera en marcha — arrancaste sobre la marcha','lg2');
   } else {
     gameState='countdown';
     addLog('Esperando el arranque oficial...','li');
@@ -1130,9 +1160,15 @@ function onHandoffEvent(ev){
   if(ev.carId!==myId)return;
   g('sl').textContent='SECTOR S'+ev.toSector;
   if(ev.toSector===1&&ev.fromSector===3){
+    // Tiempo REAL de la vuelta que se acaba de completar (no inventado)
+    if(lapStartTime){
+      lastLapMs=Date.now()-lapStartTime;
+      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
+    }
+    lapStartTime=Date.now();
     myLap++;g('ln').textContent=myLap;
     if(myLap>MAX_LAPS){finishRace();return;}
-    addLog('Vuelta '+myLap+'!','lg2');
+    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
   }
   else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
 }
@@ -1143,10 +1179,15 @@ function finishRace(){
   gameState='finished';
   const sorted=Object.entries(window.AC||{}).sort((a,b)=>(b[1].position||0)-(a[1].position||0));
   const myIdx=sorted.findIndex(([id])=>id===myId);
-  g('finPos').textContent=myIdx>=0?('Terminaste en la posición '+(myIdx+1)+' de '+sorted.length):'¡Carrera completada!';
+  const medals=['🥇','🥈','🥉'];
+  g('finPos').innerHTML=myIdx>=0
+    ?`Terminaste en la posición <b>${myIdx+1}</b> de ${sorted.length}`
+      +`<br>Tiempo total: <b>${fmtTime(raceStartTime?Date.now()-raceStartTime:null)}</b>`
+      +` · Mejor vuelta: <b>${fmtTime(bestLapMs)}</b>`
+    :'¡Carrera completada!';
   g('finBoard').innerHTML=sorted.slice(0,8).map(([id,c],i)=>`
     <div class="fin-row${id===myId?' me':''}">
-      <div class="fin-pos">${i+1}</div>
+      <div class="fin-pos">${medals[i]||(i+1)}</div>
       <div style="flex:1">${c.name||id}${id===myId?' (TÚ)':''}</div>
     </div>`).join('');
   g('fin').style.display='flex';
@@ -1191,7 +1232,28 @@ function onPlayerLeftEvent(ev){
 function refreshNodeStatus(ev){
   if(ev.type==='NODE_DOWN')ns[ev.sectorId]='d';
   if(ev.type==='LEADER_ELECTED'){Object.keys(ns).forEach(k=>{if(ns[k]!=='d')ns[k]='ok';});ns[ev.leader]='l';}
-  g('nds').innerHTML=[1,2,3].map(i=>`<div class="nn ns-${ns[i]}"><span class="nd"></span> S${i}${ns[i]==='l'?'<span class="nb">L</span>':''}${ns[i]==='d'?'<span class="nb nb2">!</span>':''}</div>`).join('');
+  if(ev.type==='ELECTION_STARTED')g('distLeader').textContent='Eligiendo… (S'+ev.initiator+')';
+  const sectorsHTML=[1,2,3].map(i=>`<div class="nn ns-${ns[i]}"><span class="nd"></span> S${i}${ns[i]==='l'?'<span class="nb">L</span>':''}${ns[i]==='d'?'<span class="nb nb2">!</span>':''}</div>`).join('');
+  if(g('nds'))g('nds').innerHTML=sectorsHTML;      // mini-widget viejo, si existe
+  if(g('distSectors'))g('distSectors').innerHTML=sectorsHTML; // panel completo
+  if(g('distLeader')&&ev.type==='LEADER_ELECTED')g('distLeader').textContent='SECTOR '+ev.leader;
+  // Heartbeat: si algún sector está caído, se nota acá — si no, todo activo
+  const anyDown=Object.values(ns).includes('d');
+  if(g('distHb')){
+    g('distHb').textContent=anyDown?'⚠ SECTOR CAÍDO':'✓ ACTIVO';
+    g('distHb').className=anyDown?'':'ok';
+  }
+}
+// Último handoff de CUALQUIER auto (no solo el mío) — el panel es para mostrar
+// el sistema distribuido en general, no solo lo que le pasa a mi propio auto.
+function updateDistHandoff(ev){
+  if(g('distHandoff'))g('distHandoff').textContent='S'+ev.fromSector+' → S'+ev.toSector;
+}
+function toggleDistPanel(){
+  const p=g('distPanel'),btn=g('dsToggle');
+  const show=p.style.display==='none';
+  p.style.display=show?'block':'none';
+  btn.classList.toggle('on',show);
 }
 function onRaceStartEvent(ev){
   _raceAlreadyStarted=true;
@@ -1212,18 +1274,19 @@ function onRaceStartEvent(ev){
   // Si ya estoy registrado y en 'countdown', arranco las luces JUSTO AHORA, al mismo
   // tiempo que todos los demás navegadores conectados (mismo evento, mismo instante).
   if(gameState==='countdown'){
-    runLights(()=>{gameState='racing';addLog('🚥 ¡GO!','lg2');});
+    runLights(()=>{gameState='racing';raceStartTime=Date.now();lapStartTime=Date.now();addLog('🚥 ¡GO!','lg2');});
   }
 }
 socket.on('race:event',ev=>{
-  if(ev.type==='HANDOFF')onHandoffEvent(ev);
+  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);}
   if(ev.type==='COLLISION')onCollisionEvent(ev);
   if(ev.type==='RACE_START')onRaceStartEvent(ev);
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
+  if(ev.type==='ELECTION_STARTED')addLog('Elección iniciada por S'+ev.initiator,'li');
   if(ev.type==='NODE_DOWN')addLog('S'+ev.sectorId+' CAÍDO','lw');
   if(ev.type==='PLAYER_JOINED'&&ev.color)carMats[ev.carId]=ev.color;
   if(ev.type==='PLAYER_LEFT')onPlayerLeftEvent(ev);
-  if(ev.vectorClock)g('vc').textContent='VC ['+ev.vectorClock+']';
+  if(ev.vectorClock){g('vc').textContent='VC ['+ev.vectorClock+']';if(g('distVC'))g('distVC').textContent='['+ev.vectorClock+']';}
   refreshNodeStatus(ev);
 });
 window.addEventListener('gamepadconnected',e=>{g('gpSt').textContent='Mando: '+e.gamepad.id.slice(0,18);g('gpSt').className='gpst ok';g('gpb').textContent='Mando OK';g('gpb').className='gp ok';});
@@ -1345,7 +1408,10 @@ function badgeFor(isMe,isBot){
 function updateHUD(){
   if(!myId||!window.AC||Object.keys(window.AC).length===0)return;
   const me=window.AC[myId];if(me){mySpd=Math.round((me.speed||0)*60);g('spn').textContent=mySpd;updateRPM(mySpd);}
-  const sorted=Object.values(window.AC).sort((a,b)=>((b.sector-1)*33+b.position)-((a.sector-1)*33+a.position));
+  // BUG ARREGLADO: c.position YA es la posición global 0-100 (igual que en todo el resto
+  // del juego) — sumarle (sector-1)*33 duplicaba el offset y podía dar el orden de
+  // posiciones equivocado cada vez que había autos en sectores distintos.
+  const sorted=Object.values(window.AC).sort((a,b)=>(b.position||0)-(a.position||0));
   const rank=sorted.findIndex(c=>c.carId===myId)+1;
   if(rank>0){g('pn').textContent=rank;
     g('pn').style.color=['','#ffd700','#c0c0c0','#cd7f32'][rank]||'#888';
@@ -1356,7 +1422,10 @@ function updateHUD(){
     const col=isMe?myCol:(carMats[c.carId]||'#888');
     const isBot=c.carId&&c.carId.startsWith('bot_');
     return`<div class="sr${isMe?' me':''}"><span class="sp2 ${pc[Math.min(r-1,3)]}">${r}</span><span class="sn" style="color:${col}">${(c.name||c.carId).slice(0,9)}</span><span class="ss">${Math.round((c.speed||0)*60)}</span>${badgeFor(isMe,isBot)}</div>`;
-  }).join('');}
+  }).join('');
+  // Reloj de tiempo real de la vuelta actual (no inventado, calculado del timestamp real)
+  if(g('rt'))g('rt').textContent=lapStartTime?fmtTime(Date.now()-lapStartTime):'--:--.---';
+}
 
 // ── START LIGHTS ─────────────────────────────────────────────
 function runLights(cb){
