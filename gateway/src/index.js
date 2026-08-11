@@ -72,12 +72,26 @@ io.on('connection', (socket) => {
     const player = players.get(socket.id);
     if (!player) return;
     const clock = vc.merge(data.vectorClock || []);
+    const payload = { carId: player.carId, action: data.action, vectorClock: clock };
     try {
-      await axios.post(`${SECTORS[player.sectorId]}/car/command`, {
-        carId: player.carId, action: data.action, vectorClock: clock
-      });
+      await axios.post(`${SECTORS[player.sectorId]}/car/command`, payload);
     } catch (err) {
-      console.error(`[Gateway] Comando fallido S${player.sectorId}: ${err.message}`);
+      // El sector esperado dice que el auto no está ahí (probablemente el aviso de handoff
+      // se perdió y player.sectorId quedó desactualizado). Intentamos el siguiente sector,
+      // que es adonde un handoff normal siempre avanza, en vez de dejar el comando en la nada.
+      if (err.response && err.response.status === 404) {
+        const nextSector = player.sectorId < 3 ? player.sectorId + 1 : 1;
+        try {
+          await axios.post(`${SECTORS[nextSector]}/car/command`, payload);
+          player.sectorId = nextSector; // corregido: se auto-sincroniza
+          console.log(`[Gateway] Auto-corregido: ${player.carId} en realidad estaba en S${nextSector}`);
+        } catch (err2) {
+          console.error(`[Gateway] Comando fallido (S${player.sectorId} y S${nextSector}): ${err2.message}`);
+          socket.emit('error', { message: 'No se pudo aplicar el comando, reconectando...' });
+        }
+      } else {
+        console.error(`[Gateway] Comando fallido S${player.sectorId}: ${err.message}`);
+      }
     }
   });
 

@@ -33,7 +33,14 @@ const hb = new HeartbeatMonitor(SECTOR_ID, redis, async (downId) => {
   if (SECTOR_ID > downId) await bully.startElection(redisPub);
 });
 
-// Bots solo en Sector 1, PARADOS hasta que llegue un jugador
+// Grilla de salida tipo "kart": 2 autos por fila, en zigzag, escalonados hacia atrás.
+// Se usa para bots y para jugadores que llegan antes de que arranque la carrera, así
+// todos aparecen ordenados en su lugar (como en Mario Kart) en vez de desperdigados.
+function gridSlot(i){
+  const row = Math.floor(i/2);
+  const lane = i%2===0 ? -0.32 : 0.32;
+  return { position: Math.max(0, 24 - row*6), lane };
+}
 const BOTS = [
   {id:'bot_hamilton', name:'Hamilton', color:'#00d2be', targetSpd:3.0},
   {id:'bot_norris',   name:'Norris',   color:'#ff8000', targetSpd:2.6},
@@ -41,7 +48,8 @@ const BOTS = [
 ];
 if (SECTOR_ID === 1) {
   BOTS.forEach((b,i) => {
-    cars.set(b.id, {name:b.name,color:b.color,position:i*9,speed:0,lane:i*.2-.2,isBot:true,targetSpd:b.targetSpd,ready:false});
+    const slot = gridSlot(i);
+    cars.set(b.id, {name:b.name,color:b.color,position:slot.position,speed:0,lane:slot.lane,isBot:true,targetSpd:b.targetSpd,ready:false});
     console.log(`[Bots] ${b.name} listo en grilla`);
   });
 }
@@ -99,6 +107,12 @@ async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
   const impact = Math.min(1, Math.abs(cA.speed - cB.speed) / 4.5 + 0.25);
   const penalty = 1 + impact * 2.5; // entre 1 y 3.5 según la fuerza del golpe
   if (cA.speed>=cB.speed) cA.speed=Math.max(cA.speed-penalty,0); else cB.speed=Math.max(cB.speed-penalty,0);
+  // BUG ARREGLADO: el enfriamiento de arriba es por PAREJA, así que en un amontonamiento
+  // de 3+ autos, uno distinto podía golpearte cada 100ms sin que ninguna pareja "repitiera"
+  // dentro de los 700ms — quedabas trabado en 0 para siempre. Ahora, tras recibir un golpe,
+  // ese auto queda medio segundo sin poder ser chocado por NADIE, dándole tiempo real de escapar.
+  const recoverUntil = now + 500;
+  cA.hitUntil = recoverUntil; cB.hitUntil = recoverUntil;
   console.log(`[S${SECTOR_ID}] COLISIÓN: ${idA} vs ${idB} (impacto ${impact.toFixed(2)})`);
   await redisPub.publish('race:events',JSON.stringify({type:'COLLISION',carA:idA,carB:idB,sector:SECTOR_ID,impact,timestamp:Date.now()}));
 }
@@ -112,6 +126,8 @@ async function handlePair(idA, cA, idB, cB, hit, now) {
   // Auto recién registrado (jugador que entra a una carrera ya en marcha) —
   // inmunidad breve para que le dé tiempo a arrancar antes de que lo choquen
   if ((cA.spawnUntil && now < cA.spawnUntil) || (cB.spawnUntil && now < cB.spawnUntil)) return;
+  // Enfriamiento por auto (no solo por pareja) — ver nota en applyCollisionPenalty
+  if ((cA.hitUntil && now < cA.hitUntil) || (cB.hitUntil && now < cB.hitUntil)) return;
   if (!isColliding(cA,cB)) return;
   const key = idA<idB ? idA+'|'+idB : idB+'|'+idA;
   separateLanes(cA,cB);
@@ -146,22 +162,36 @@ setInterval(async () => {
 async function handoff(carId, car, target) {
   try {
     await axios.post(`${SECTOR_URLS[target]}/car/receive`,{carId,car:{...car,position:RANGE[target].min},fromSector:SECTOR_ID,toSector:target});
-    await axios.post(`${GATEWAY}/handoff-notify`,{carId,fromSector:SECTOR_ID,toSector:target}).catch(()=>{});
+    await notifyGatewayHandoff(carId, target);
     console.log(`[S${SECTOR_ID}] Handoff ${carId}→S${target}`);
   } catch(e) { console.error(`[S${SECTOR_ID}] Error handoff: ${e.message}`); car.position=RANGE[SECTOR_ID].max-1; cars.set(carId,car); }
 }
 
+// Avisa al gateway que el auto cambió de sector, con 2 reintentos cortos.
+// Antes era "fire and forget" (.catch(()=>{})): si este único intento fallaba,
+// el gateway quedaba creyendo que el auto seguía en el sector viejo para siempre,
+// y desde ahí todos los comandos del jugador se mandaban a un sector donde el auto
+// ya no existe (404 silencioso) — el jugador se quedaba trabado sin ningún aviso.
+async function notifyGatewayHandoff(carId, target, attempt=1) {
+  try {
+    await axios.post(`${GATEWAY}/handoff-notify`,{carId,fromSector:SECTOR_ID,toSector:target},{timeout:1500});
+  } catch(e) {
+    if (attempt < 3) {
+      await new Promise(r=>setTimeout(r,150*attempt));
+      return notifyGatewayHandoff(carId, target, attempt+1);
+    }
+    console.error(`[S${SECTOR_ID}] No se pudo avisar el handoff al gateway tras 3 intentos: ${e.message}`);
+  }
+}
+
 app.post('/car/register', (req,res) => {
   const {carId,name,color,vectorClock}=req.body;
-  // BUG ARREGLADO: antes TODOS los jugadores nacían en el mismo carril (0), quedando
-  // encimados si se unían dos al mismo tiempo. Ahora cada uno nace en un carril distinto.
+  // Grilla de salida tipo kart: el jugador ocupa el siguiente lugar en la fila,
+  // justo detrás de los bots, en vez de nacer suelto en un carril lejos de todos.
   const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
-  const laneSlots = [0,-0.6,0.6,-0.88,0.88,-0.3,0.3];
-  const lane = laneSlots[humanCount % laneSlots.length];
-  // También separamos un poco la posición de arranque para que ni siquiera el carril los salve de chocar
-  const posOffset = Math.floor(humanCount/laneSlots.length)*1.5;
-  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+28+posOffset,speed:0,lane,vectorClock,spawnUntil:Date.now()+4000});
-  console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${lane})`);
+  const slot = gridSlot(BOTS.length + humanCount);
+  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,vectorClock,spawnUntil:Date.now()+4000});
+  console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${slot.lane}, pos ${slot.position})`);
   // Primera vez que llega un jugador real → contar 5s y soltar bots
   if (!playerJoined && SECTOR_ID===1) {
     playerJoined = true;

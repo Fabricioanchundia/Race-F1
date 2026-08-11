@@ -517,6 +517,11 @@ function buildTrack(){
   const at=new BABYLON.DynamicTexture('at',{width:512,height:512},scene);
   const ax=at.getContext();ax.fillStyle='#0a0a0d';ax.fillRect(0,0,512,512);
   for(let i=0;i<5000;i++){const v=Math.floor(rnd()*14+8);ax.fillStyle=`rgb(${v},${v},${v+2})`;ax.fillRect(rnd()*512,rnd()*512,1.5,1);}
+  // Rayas de pista: línea central discontinua + líneas de borde sólidas (como una pista real)
+  ax.fillStyle='rgba(255,255,255,.55)';
+  for(let dy=0;dy<512;dy+=44){ax.fillRect(252,dy,8,26);} // central discontinua
+  ax.fillStyle='rgba(255,255,255,.35)';
+  ax.fillRect(28,0,5,512);ax.fillRect(479,0,5,512); // bordes sólidos, cerca de los kerbs
   at.update();at.vScale=20;
   const rm=new BABYLON.StandardMaterial('rm',scene);rm.diffuseTexture=at;rm.specularColor=new C3(.02,.02,.02);rm.specularPower=64;
   const km=new BABYLON.StandardMaterial('km',scene);
@@ -772,6 +777,11 @@ function makeCar(hexCol){
     tires.push(t2);
   });
   root._tires=tires;
+  // Luces de freno (se encienden fuerte al frenar, ver cmd())
+  const brakeMat=new BABYLON.StandardMaterial('brakeMat_'+root.name,scene);
+  brakeMat.diffuseColor=new C3(.3,0,0);brakeMat.emissiveColor=new C3(.15,0,0);brakeMat.specularColor=new C3(0,0,0);
+  const bl1=A('bl1',[.16,.1,.06],[-.62,.42,-2.12],brakeMat);const bl2=A('bl2',[.16,.1,.06],[.62,.42,-2.12],brakeMat);
+  root._brakeLights=[bl1,bl2];root._brakeMat=brakeMat;
   return root;
 }
 
@@ -890,7 +900,23 @@ function onCollisionEvent(ev){
     setTimeout(sh,38);
   };
   sh();
+  flashCarHit(impact);
   addLog((impact>0.7?'💥 ¡COLISIÓN FUERTE! ':'¡Colisión! ')+'S'+ev.sector,'lw');
+}
+// Hace que el auto del jugador "sienta" el golpe: un destello blanco breve en la
+// carrocería + una sacudida de rotación, más marcada cuanto más fuerte fue el impacto.
+function flashCarHit(impact){
+  if(!playerCar)return;
+  const bm=playerCar.getChildMeshes().find(m=>m.name.startsWith('body_'))?.material;
+  if(bm){
+    const orig=bm.emissiveColor.clone();
+    bm.emissiveColor=new BABYLON.Color3(1,.85,.6);
+    setTimeout(()=>{bm.emissiveColor=orig;},90+impact*120);
+  }
+  const kick=(0.05+impact*0.12)*(rnd()<.5?1:-1); // NOSONAR: aleatoriedad visual (cosmetica), no criptografica
+  playerCar.rotation.z+=kick;
+  const settle=()=>{playerCar.rotation.z*=.82;if(Math.abs(playerCar.rotation.z)>.005)requestAnimationFrame(settle);else playerCar.rotation.z=0;};
+  setTimeout(settle,60);
 }
 function onPlayerLeftEvent(ev){
   if(cars[ev.carId]){cars[ev.carId].getChildMeshes().forEach(m=>m.dispose());cars[ev.carId].dispose();delete cars[ev.carId];}
@@ -1055,10 +1081,29 @@ function runLights(cb){
 
 // ── UTILS ────────────────────────────────────────────────────
 let cmdCount=0;
+let _leanT=null;
+function playCarFeedback(a){
+  if(!playerCar)return;
+  if(a==='brake'&&playerCar._brakeMat){
+    playerCar._brakeMat.emissiveColor=new BABYLON.Color3(1,.05,.05);
+    clearTimeout(playerCar._brakeOff);
+    playerCar._brakeOff=setTimeout(()=>{playerCar._brakeMat.emissiveColor=new BABYLON.Color3(.15,0,0);},220);
+  }
+  if(a==='steerLeft'||a==='steerRight'){
+    const targetLean=(a==='steerLeft'?1:-1)*.16; // se inclina hacia el giro, como al tomar una curva
+    clearTimeout(_leanT);
+    playerCar.rotation.z=targetLean;
+    _leanT=setTimeout(()=>{ // vuelve derecho de a poco
+      const back=()=>{playerCar.rotation.z*=.8;if(Math.abs(playerCar.rotation.z)>.005)requestAnimationFrame(back);else playerCar.rotation.z=0;};
+      back();
+    },90);
+  }
+}
 function cmd(a){
   if(!myId){console.warn('[cmd] IGNORADO — todavia no hay myId (no estas registrado)');return;}
   cmdCount++;
   myVC[3]++;socket.emit('car:command',{action:a,vectorClock:[...myVC]});
+  playCarFeedback(a);
   g('vc').textContent='VC ['+myVC+']';
   console.log('[cmd] enviado #'+cmdCount+':',a);
   const dbg=g('cmdDbg');if(dbg){dbg.textContent='✅ Comandos enviados: '+cmdCount+' (ultimo: '+a+')';}
