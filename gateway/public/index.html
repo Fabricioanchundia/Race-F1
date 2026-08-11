@@ -526,6 +526,19 @@ const groundTex=new BABYLON.DynamicTexture('groundTex',{width:1024,height:1024},
   grad.addColorStop(0,'#0d3812');grad.addColorStop(1,'rgba(13,56,18,0)');
   c.fillStyle=grad;c.beginPath();c.arc(cx,cy,innerR*0.55,0,Math.PI*2);c.fill();
   c.fillStyle='#0d3812';c.beginPath();c.arc(cx,cy,innerR*0.28,0,Math.PI*2);c.fill();
+  // Rayas de césped cortado (mowing stripes) — la seña visual más reconocible de un
+  // estadio de F1 real visto desde arriba, antes el césped era un color plano sin textura
+  c.save();c.beginPath();c.arc(cx,cy,innerR*0.56,0,Math.PI*2);c.clip();
+  const stripeW=18;
+  for(let sx=-innerR;sx<innerR*1.5;sx+=stripeW*2){
+    c.fillStyle='rgba(255,255,255,.05)';
+    c.fillRect(cx+sx,cy-innerR,stripeW,innerR*2);
+  }
+  for(let sy=-innerR;sy<innerR*1.5;sy+=stripeW*2){
+    c.fillStyle='rgba(0,0,0,.06)';
+    c.fillRect(cx-innerR,cy+sy,innerR*2,stripeW);
+  }
+  c.restore();
 })();
 groundTex.update();
 gm.diffuseTexture=groundTex;gm.specularColor=new BABYLON.Color3(.01,.02,.01);
@@ -588,6 +601,16 @@ function buildTrack(){
   const at=new BABYLON.DynamicTexture('at',{width:512,height:512},scene);
   const ax=at.getContext();ax.fillStyle='#0a0a0d';ax.fillRect(0,0,512,512);
   for(let i=0;i<5000;i++){const v=Math.floor(rnd()*14+8);ax.fillStyle=`rgb(${v},${v},${v+2})`;ax.fillRect(rnd()*512,rnd()*512,1.5,1);}
+  // Línea de carrera desgastada (racing line): una franja más clara que serpentea de un
+  // lado al otro del carril, como el desgaste real que dejan las gomas de los autos —
+  // antes el asfalto era perfectamente uniforme, se veía "de fábrica" en vez de usado.
+  ax.strokeStyle='rgba(70,68,66,.4)';ax.lineWidth=48;ax.lineCap='round';
+  ax.beginPath();
+  for(let yy=0;yy<=512;yy+=8){
+    const xx=256+Math.sin(yy*0.025)*130;
+    yy===0?ax.moveTo(xx,yy):ax.lineTo(xx,yy);
+  }
+  ax.stroke();
   // Rayas de pista: línea central discontinua + líneas de borde sólidas (como una pista real)
   ax.fillStyle='rgba(255,255,255,.55)';
   for(let dy=0;dy<512;dy+=44){ax.fillRect(252,dy,8,26);} // central discontinua
@@ -645,6 +668,30 @@ function buildTrack(){
     const b=bt.createInstance('b'+i+'_'+sd);b.position.set(bx,.55,bz);b.rotation.y=info.angle+Math.PI/2;shadowGen.addShadowCaster(b);
     if(i%3===0){const s=st2.createInstance('s'+i+'_'+sd);s.position.set(bx,.65,bz);s.rotation.y=info.angle+Math.PI/2;}
   });}
+  // Pilas de neumáticos (tire barriers) — elemento clásico de un circuito real,
+  // protegen las curvas y le dan mucho más carácter visual a la pista (antes no había)
+  (function buildTireStacks(){
+    const tireTex=SM('tireTex',()=>{
+      const t=new BABYLON.DynamicTexture('tireTex',{width:64,height:64},scene);const c=t.getContext();
+      c.fillStyle='#0a0a0a';c.fillRect(0,0,64,64);
+      c.strokeStyle='#3a3a3a';c.lineWidth=3;c.beginPath();c.arc(32,32,26,0,Math.PI*2);c.stroke();
+      c.strokeStyle='#dd1010';c.lineWidth=2;c.beginPath();c.arc(32,32,18,0,Math.PI*2);c.stroke();
+      t.update();return t;});
+    const tireMat=SM('tireMat',()=>{const m=new BABYLON.StandardMaterial('tireMat',scene);m.diffuseTexture=tireTex;m.specularColor=new C3(.05,.05,.05);return m;});
+    const T_OFF=BOFF+2.6;
+    [.08,.24,.4,.56,.72,.88].forEach(t=>{
+      const info=TP(t);
+      const bx=info.x+info.nx*T_OFF,bz=info.z+info.nz*T_OFF;
+      // Pila de 4 neumáticos, 2 filas x 2 alturas
+      [[-.5,.32],[.5,.32],[-.5,.9],[.5,.9]].forEach(([ox,oy])=>{
+        const tire=BABYLON.MeshBuilder.CreateCylinder('tire'+t+ox+oy,{diameter:.9,height:.55,tessellation:14},scene);
+        tire.material=tireMat;
+        tire.position.set(bx+info.nx*ox,oy,bz+info.nz*ox);
+        tire.rotation.x=Math.PI/2;tire.rotation.z=info.angle;
+        shadowGen.addShadowCaster(tire);
+      });
+    });
+  })();
   // Pit lane: fila de boxes/garajes + carril lateral marcado, cerca de la línea de meta
   // (elemento que faltaba — se ve en cualquier circuito real)
   (function buildPitLane(){
