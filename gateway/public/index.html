@@ -1224,17 +1224,18 @@ function onHandoffEvent(ev){
 }
 // Termina la carrera para el jugador: congela los controles y muestra el podio final
 // con la clasificación tal como está en ese momento.
-function finishRace(){
+function finishRace(winnerName){
   if(gameState==='finished')return;
   gameState='finished';
   const sorted=Object.entries(window.AC||{}).sort((a,b)=>raceProgress(b[0],b[1].position)-raceProgress(a[0],a[1].position));
   const myIdx=sorted.findIndex(([id])=>id===myId);
   const medals=['🥇','🥈','🥉'];
-  g('finPos').innerHTML=myIdx>=0
+  const winnerNote=winnerName?`<div style="color:#8a8a8a;font-size:.7rem;margin-bottom:6px">${winnerName} completó las ${MAX_LAPS} vueltas primero</div>`:'';
+  g('finPos').innerHTML=winnerNote+(myIdx>=0
     ?`Terminaste en la posición <b>${myIdx+1}</b> de ${sorted.length}`
       +`<br>Tiempo total: <b>${fmtTime(raceStartTime?Date.now()-raceStartTime:null)}</b>`
       +` · Mejor vuelta: <b>${fmtTime(bestLapMs)}</b>`
-    :'¡Carrera completada!';
+    :'¡Carrera completada!');
   g('finBoard').innerHTML=sorted.slice(0,8).map(([id,c],i)=>`
     <div class="fin-row${id===myId?' me':''}">
       <div class="fin-pos">${medals[i]||(i+1)}</div>
@@ -1341,7 +1342,15 @@ function onRaceStartEvent(ev){
 // que se puede trackear la vuelta de cualquier auto sin tocar el servidor ni Socket.IO.
 const carLaps={};
 function trackLap(ev){
-  if(ev.toSector===1&&ev.fromSector===3)carLaps[ev.carId]=(carLaps[ev.carId]||1)+1;
+  if(ev.toSector!==1||ev.fromSector!==3)return;
+  carLaps[ev.carId]=(carLaps[ev.carId]||1)+1;
+  // La carrera termina cuando CUALQUIERA (bot o jugador) completa las 5 vueltas —
+  // como en una carrera real: si el líder toma la bandera a cuadros, se acaba para
+  // todos, no solo cuando el jugador termina la suya.
+  if(gameState==='racing'&&carLaps[ev.carId]>MAX_LAPS){
+    const winnerName=window.AC?.[ev.carId]?.name||ev.carId;
+    finishRace(ev.carId===myId?null:winnerName);
+  }
 }
 // Progreso total de un auto para ordenar la clasificación: vuelta*100+posición, no solo
 // la posición (que se reinicia cada vuelta y por sí sola no alcanza para comparar autos

@@ -171,10 +171,13 @@ async function updateCarPhysics(carId, car) {
       car.lane  = (car.lane||0) * .92 + (Math.random()-.5)*.02; // NOSONAR: aleatoriedad de IA de bots, no criptografica
     } else { car.speed = 0; }
   } else {
-    // El carril del jugador solo vuelve al centro MUY lentamente (antes era *.88 cada
-    // 100ms, o sea se recentraba solo en ~1s) -- eso deshacía la separación lograda tras
-    // chocar, y los autos volvían a juntarse y chocar en bucle infinito sin poder avanzar.
-    car.lane = (car.lane||0) * .992;
+    // El carril del jugador solo vuelve al centro MUY lentamente. BUG ARREGLADO: al
+    // ensanchar los carriles de la grilla (0.32 -> 0.65 en la ronda anterior), este
+    // recentrado se volvió el DOBLE de visible — el auto se deslizaba solo hasta 0.75
+    // unidades en los primeros 10s sin que el jugador tocara nada, sintiéndose como si
+    // "girara automáticamente". Ahora es mucho más lento (imperceptible en los primeros
+    // segundos), pero sigue existiendo para deshacer a largo plazo la separación post-choque.
+    car.lane = (car.lane||0) * .998;
     // BUG ARREGLADO: antes, una vez que acelerabas, la velocidad se quedaba pegada ahí
     // para siempre (nunca bajaba sola) hasta que frenaras a mano -- se sentía ilógico,
     // como si el auto siguiera "acelerando" solo. Ahora hay una fricción natural leve
