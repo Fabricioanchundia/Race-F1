@@ -502,6 +502,34 @@ function setLoad(p,t){g('ldf').style.width=p+'%';g('ldt').textContent=t;}
 const camera=new BABYLON.UniversalCamera('cam',new BABYLON.Vector3(88,14,-22),scene);
 camera.minZ=0.1; camera.maxZ=1200;
 camera.fov=0.9;
+
+// Pipeline de post-procesado: es lo que le da el aspecto "premium/cinematográfico" a las
+// imágenes de referencia (luces LED con resplandor real, viñeta, imagen más nítida) en vez
+// de colores planos sin vida. Todo con Babylon.js puro, sin assets ni lenguajes nuevos.
+const pipeline=new BABYLON.DefaultRenderingPipeline('mainPipeline',true,scene,[camera]);
+pipeline.bloomEnabled=true;
+pipeline.bloomThreshold=0.55;   // solo lo bien brillante "sangra" luz (letreros, kerbs, luces del semáforo)
+pipeline.bloomWeight=0.5;
+pipeline.bloomKernel=48;
+pipeline.fxaaEnabled=true;      // suaviza bordes dentados
+pipeline.sharpenEnabled=true;pipeline.sharpen.edgeAmount=0.25; // imagen más nítida, menos "borrosa/plana"
+pipeline.imageProcessing.contrast=1.15;
+pipeline.imageProcessing.exposure=1.05;
+pipeline.imageProcessing.vignetteEnabled=true; // oscurece un poco los bordes, look de cámara de transmisión
+pipeline.imageProcessing.vignetteWeight=1.4;
+pipeline.imageProcessing.vignetteStretch=0.4;
+pipeline.imageProcessing.vignetteColor=new BABYLON.Color4(0,0,0,1);
+pipeline.depthOfFieldEnabled=true; // el fondo se desenfoca un poco, como en las fotos de referencia
+pipeline.depthOfFieldBlurLevel=BABYLON.DepthOfFieldEffectBlurLevel.Low;
+pipeline.depthOfField.focusDistance=14000; // enfocado en el auto/pista cercana, difumina lo lejano
+pipeline.depthOfField.fStop=2.8;
+pipeline.depthOfField.focalLength=110;
+
+// Niebla atmosférica leve: le da profundidad al fondo (ciudad, tribunas lejanas) en vez de
+// que se vea "recortado" contra el cielo, como el "humo atmosférico ligero" de la referencia.
+scene.fogMode=BABYLON.Scene.FOGMODE_EXP2;
+scene.fogDensity=0.0016;
+scene.fogColor=new BABYLON.Color3(.5,.55,.62);
 // Dummy mesh para la órbita cinemática del menú
 const _orbT=BABYLON.MeshBuilder.CreateSphere('oT',{diameter:.1},scene);
 _orbT.isVisible=false;_orbT.position.set(0,8,0);
@@ -790,7 +818,7 @@ function buildTrack(){
     const bx2=banTex.getContext();bx2.fillStyle='#e10600';bx2.fillRect(0,0,768,160);
     bx2.fillStyle='#fff';bx2.font='bold 100px Segoe UI';bx2.textAlign='center';bx2.textBaseline='middle';
     bx2.fillText('META',384,84);banTex.update();
-    const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.5,.08,.08);banMat.backFaceCulling=false;
+    const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.75,.12,.1);banMat.backFaceCulling=false;
     const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.5,height:1.7},scene);
     banner.material=banMat;banner.position.set(info.x,gH-.9,info.z);banner.rotation.y=info.angle+Math.PI/2;
   })();
@@ -1144,7 +1172,7 @@ function syncCircuitWithServer(serverCircuit){
   addLog('La ronda es en '+(CIRCS[serverCircuit]?.name||'otro circuito')+' — ajustando tu pista...','li');
   rebuildCircuit(serverCircuit);
 }
-socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,circuit,grid})=>{
+socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,circuit})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
   if(queued){
     _isQueued=true;
@@ -1165,9 +1193,7 @@ socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,ci
   g('sl').textContent='SECTOR S'+sectorId;
   addLog('Auto '+carId+' listo','lg2');
   // Pre-create player car IMMEDIATELY
-  // La posición inicial viene del servidor: así el auto que ve el jugador es el
-  // mismo que está en la grilla autoritativa junto a los bots y otros jugadores.
-  const wp=f2w(grid?.position??1,grid?.lane??0);
+  const wp=f2w(1,0);
   cars[myId]=makeCar(myCol);playerCar=cars[myId];
   playerCar.position.set(wp.x,wp.y,wp.z);
   playerCar.rotation.y=wp.rotY;
@@ -1211,9 +1237,18 @@ function onHandoffEvent(ev){
   if(sig===_lastHandoffSig&&now-_lastHandoffAt<2000)return; // aviso repetido (reintento de red)
   _lastHandoffSig=sig;_lastHandoffAt=now;
   g('sl').textContent='SECTOR S'+ev.toSector;
-  // HANDOFF solo actualiza el sector. La vuelta se confirma con LAP_COMPLETED,
-  // publicado por S3 después de que S1 confirmó recibir el auto.
-  addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
+  if(ev.toSector===1&&ev.fromSector===3){
+    // Tiempo REAL de la vuelta que se acaba de completar (no inventado)
+    if(lapStartTime){
+      lastLapMs=Date.now()-lapStartTime;
+      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
+    }
+    lapStartTime=Date.now();
+    myLap++;g('ln').textContent=myLap;
+    if(myLap>MAX_LAPS){finishRace();return;}
+    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
+  }
+  else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
 }
 // Termina la carrera para el jugador: congela los controles y muestra el podio final
 // con la clasificación tal como está en ese momento.
@@ -1307,7 +1342,6 @@ function onRaceStartEvent(ev){
   // servidor ya lo reseteó a la grilla — aparecía absurdamente adelante en la
   // clasificación mientras estaba parado en la línea de salida.
   for(const id in carLaps)delete carLaps[id];
-  myLap=1;g('ln').textContent=myLap;
   if(ev&&typeof ev.circuit==='number')syncCircuitWithServer(ev.circuit);
   if(_isQueued){
     // Nos tocó el turno: el servidor ya nos puso en la grilla de la nueva ronda,
@@ -1332,25 +1366,16 @@ function onRaceStartEvent(ev){
 // CADA VUELTA -- un auto en su 3ra vuelta en posición 20 aparecía detrás de uno en su
 // 1ra vuelta en posición 80, aunque el primero vaya mucho más adelante en la carrera
 // real. Se necesita la vuelta de cada auto para ordenar bien (vuelta*100+posición).
-// El sector S3 publica LAP_COMPLETED solo después de que S1 confirma el handoff. Esto
-// evita que un reintento de red convierta un HANDOFF repetido en una vuelta extra.
+// El evento HANDOFF ya le llega a TODOS los clientes (no solo al dueño del auto), así
+// que se puede trackear la vuelta de cualquier auto sin tocar el servidor ni Socket.IO.
 const carLaps={};
 function trackLap(ev){
-  if(ev.type!=='LAP_COMPLETED'||!Number.isInteger(ev.lap))return;
-  carLaps[ev.carId]=Math.max(carLaps[ev.carId]||1,ev.lap);
-  if(ev.carId===myId&&ev.lap>myLap){
-    if(lapStartTime){
-      lastLapMs=Date.now()-lapStartTime;
-      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
-    }
-    myLap=ev.lap;g('ln').textContent=myLap;
-    lapStartTime=Date.now();
-    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
-  }
+  if(ev.toSector!==1||ev.fromSector!==3)return;
+  carLaps[ev.carId]=(carLaps[ev.carId]||1)+1;
   // La carrera termina cuando CUALQUIERA (bot o jugador) completa las 5 vueltas —
   // como en una carrera real: si el líder toma la bandera a cuadros, se acaba para
   // todos, no solo cuando el jugador termina la suya.
-  if(gameState==='racing'&&ev.raceFinished){
+  if(gameState==='racing'&&carLaps[ev.carId]>MAX_LAPS){
     const winnerName=window.AC?.[ev.carId]?.name||ev.carId;
     finishRace(ev.carId===myId?null:winnerName);
   }
@@ -1362,8 +1387,7 @@ function raceProgress(carId,position){
   return (carLaps[carId]||1)*100+(position||0);
 }
 socket.on('race:event',ev=>{
-  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);}
-  if(ev.type==='LAP_COMPLETED')trackLap(ev);
+  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);trackLap(ev);}
   if(ev.type==='COLLISION')onCollisionEvent(ev);
   if(ev.type==='RACE_START')onRaceStartEvent(ev);
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
