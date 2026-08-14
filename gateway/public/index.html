@@ -529,22 +529,24 @@ camera.fov=0.9;
 // de colores planos sin vida. Todo con Babylon.js puro, sin assets ni lenguajes nuevos.
 const pipeline=new BABYLON.DefaultRenderingPipeline('mainPipeline',true,scene,[camera]);
 pipeline.bloomEnabled=true;
-pipeline.bloomThreshold=0.55;   // solo lo bien brillante "sangra" luz (letreros, kerbs, luces del semáforo)
-pipeline.bloomWeight=0.5;
-pipeline.bloomKernel=48;
-pipeline.fxaaEnabled=true;      // suaviza bordes dentados
-pipeline.sharpenEnabled=true;pipeline.sharpen.edgeAmount=0.25; // imagen más nítida, menos "borrosa/plana"
+pipeline.bloomThreshold=0.6;    // solo lo bien brillante "sangra" luz (letreros, kerbs, luces del semáforo)
+pipeline.bloomWeight=0.45;
+pipeline.bloomKernel=32;        // BUG DE RENDIMIENTO ARREGLADO: 48 era innecesariamente costoso, 32 se ve casi igual y rinde mejor
+pipeline.fxaaEnabled=true;      // suaviza bordes dentados (barato)
+pipeline.sharpenEnabled=true;pipeline.sharpen.edgeAmount=0.25; // imagen más nítida (barato)
 pipeline.imageProcessing.contrast=1.15;
 pipeline.imageProcessing.exposure=1.05;
-pipeline.imageProcessing.vignetteEnabled=true; // oscurece un poco los bordes, look de cámara de transmisión
+pipeline.imageProcessing.vignetteEnabled=true; // oscurece un poco los bordes, look de cámara de transmisión (barato)
 pipeline.imageProcessing.vignetteWeight=1.4;
 pipeline.imageProcessing.vignetteStretch=0.4;
 pipeline.imageProcessing.vignetteColor=new BABYLON.Color4(0,0,0,1);
-pipeline.depthOfFieldEnabled=true; // el fondo se desenfoca un poco, como en las fotos de referencia
-pipeline.depthOfFieldBlurLevel=BABYLON.DepthOfFieldEffectBlurLevel.Low;
-pipeline.depthOfField.focusDistance=14000; // enfocado en el auto/pista cercana, difumina lo lejano
-pipeline.depthOfField.fStop=2.8;
-pipeline.depthOfField.focalLength=110;
+// BUG DE RENDIMIENTO ARREGLADO: la profundidad de campo (depthOfField) es, con
+// diferencia, el efecto más caro de todo este pipeline — necesita pasadas extra de
+// render solo para calcular el desenfoque. Era un efecto "bonito" pero no esencial
+// (a diferencia del bloom, que sí era el pedido principal: el resplandor de luces).
+// Desactivada para recuperar rendimiento; se puede reactivar más adelante en una PC
+// más potente si hace falta.
+pipeline.depthOfFieldEnabled=false;
 
 // Niebla atmosférica leve: le da profundidad al fondo (ciudad, tribunas lejanas) en vez de
 // que se vea "recortado" contra el cielo, como el "humo atmosférico ligero" de la referencia.

@@ -67,11 +67,17 @@ const hb = new HeartbeatMonitor(SECTOR_ID, redis, async (downId) => {
 // Grilla F1: dos autos por fila, en posiciones alternadas y con una distancia que
 // evita que nazcan superpuestos. Tres autos lado a lado se veía como una fila de
 // karts y dejaba al jugador visualmente muy separado de los bots.
-const LANES = [-0.36, 0.36];
+// BUG ARREGLADO: el auto mide ~2.2-3 unidades de ancho (carrocería + gomas), pero la
+// separación entre carriles adyacentes solo daba 1.5 unidades — los autos SE TENÍAN
+// que superponer visualmente aunque el sistema de colisión no los marcara como
+// chocando (usa un umbral distinto). Ahora los carriles están más separados,
+// suficiente para superar el ancho real del auto, sin tocar el límite general de
+// carril (±0.88) que ya usa el resto de la física en otras funciones.
+const LANES = [-0.62, 0.62];
 function gridSlot(i){
   const row = Math.floor(i/LANES.length);
   const lane = LANES[i%LANES.length];
-  return { position: Math.max(0.8, 8 - row*2.25), lane };
+  return { position: Math.max(0.5, 10 - row*2.25), lane };
 }
 const BOTS = [
   {id:'bot_hamilton', name:'Hamilton', color:'#00d2be', targetSpd:3.0},
