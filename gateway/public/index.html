@@ -821,18 +821,18 @@ function buildTrack(){
     // Franja a cuadros más ancha en el piso (antes 1.1 de profundidad, casi no se notaba)
     const line=BABYLON.MeshBuilder.CreateBox('finishLine',{width:RW_H*2+KW*2+.6,height:.1,depth:2.4},scene);
     line.material=ckMat;line.position.set(info.x,0.07,info.z);line.rotation.y=info.angle+Math.PI/2;
-    // Pórtico sobre la pista, con letrero META — tamaño intermedio: visible mejor que
-    // el original, pero sin tapar la vista de la cámara al pasar cerca (bug confirmado
-    // con el video: el banner llegaba a ocupar ~1/3 de la pantalla)
+    // Pórtico sobre la pista, con letrero META — punto medio entre las dos versiones
+    // anteriores (una tapaba la cámara, la otra se veía chica frente al ancho de la
+    // pista) — más alto y con el banner más ancho que la última vez.
     const postMat=new BABYLON.StandardMaterial('postMat',scene);postMat.diffuseColor=new C3(.85,.85,.9);postMat.specularColor=new C3(.3,.3,.3);
-    const gW=RW_H*2+KW*2+2,gH=7.5;
+    const gW=RW_H*2+KW*2+2,gH=8.3;
     [-1,1].forEach(sd=>{
-      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.5,height:gH,tessellation:10},scene);
+      const post=BABYLON.MeshBuilder.CreateCylinder('finPost'+sd,{diameter:.55,height:gH,tessellation:10},scene);
       post.material=postMat;
       post.position.set(info.x+info.nx*sd*(gW/2),gH/2,info.z+info.nz*sd*(gW/2));
       shadowGen.addShadowCaster(post);
     });
-    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.55,depth:.55},scene);
+    const beam=BABYLON.MeshBuilder.CreateBox('finBeam',{width:gW+.6,height:.6,depth:.6},scene);
     beam.material=postMat;beam.position.set(info.x,gH,info.z);beam.rotation.y=info.angle+Math.PI/2;
     shadowGen.addShadowCaster(beam);
     const banTex=new BABYLON.DynamicTexture('banTex',{width:768,height:160},scene);
@@ -840,7 +840,7 @@ function buildTrack(){
     bx2.fillStyle='#fff';bx2.font='bold 100px Segoe UI';bx2.textAlign='center';bx2.textBaseline='middle';
     bx2.fillText('META',384,84);banTex.update();
     const banMat=new BABYLON.StandardMaterial('banMat',scene);banMat.diffuseTexture=banTex;banMat.emissiveColor=new C3(.75,.12,.1);banMat.backFaceCulling=false;
-    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.5,height:1.7},scene);
+    const banner=BABYLON.MeshBuilder.CreatePlane('banner',{width:gW*.62,height:2.1},scene);
     banner.material=banMat;banner.position.set(info.x,gH-.9,info.z);banner.rotation.y=info.angle+Math.PI/2;
   })();
   // Vallas publicitarias: mezcla de colores sólidos + vallas con el logo "RACESYNC"
@@ -1372,7 +1372,7 @@ function onRaceStartEvent(ev){
   // Si ya estoy registrado y en 'countdown', arranco las luces JUSTO AHORA, al mismo
   // tiempo que todos los demás navegadores conectados (mismo evento, mismo instante).
   if(gameState==='countdown'){
-    runLights(()=>{gameState='racing';raceStartTime=Date.now();lapStartTime=Date.now();addLog('🚥 ¡GO!','lg2');});
+    runLights(()=>{gameState='racing';raceStartTime=Date.now();lapStartTime=Date.now();addLog('🟢 ¡LISTO, EMPIEZA! (bots y jugadores arrancan AHORA)','lg2');});
   }
 }
 // BUG ARREGLADO: la clasificación ordenaba solo por 'position' (0-100), que se reinicia
@@ -1621,8 +1621,12 @@ function g(id){return document.getElementById(id);}
 function addLog(msg,cls='li'){
   const el=g('el');
   if(!el)return;
-  el.innerHTML=`<div class="le ${cls}">[${new Date().toLocaleTimeString()}] ${msg}</div>`+el.innerHTML;
-  if(el.children.length>5){el.lastElementChild.remove();}
+  // Milisegundos incluidos a propósito: sin esto, dos eventos en el mismo segundo
+  // (por ejemplo una colisión y el "¡GO!") se veían con el mismo timestamp exacto,
+  // sin poder saber cuál pasó primero de verdad.
+  const ms=String(new Date().getMilliseconds()).padStart(3,'0');
+  el.innerHTML=`<div class="le ${cls}">[${new Date().toLocaleTimeString()}.${ms}] ${msg}</div>`+el.innerHTML;
+  if(el.children.length>7){el.lastElementChild.remove();}
 }
 </script>
 </body>
