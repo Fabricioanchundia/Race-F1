@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1145,7 +1144,7 @@ function syncCircuitWithServer(serverCircuit){
   addLog('La ronda es en '+(CIRCS[serverCircuit]?.name||'otro circuito')+' — ajustando tu pista...','li');
   rebuildCircuit(serverCircuit);
 }
-socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,circuit})=>{
+socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,circuit,grid})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
   if(queued){
     _isQueued=true;
@@ -1166,7 +1165,9 @@ socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,ci
   g('sl').textContent='SECTOR S'+sectorId;
   addLog('Auto '+carId+' listo','lg2');
   // Pre-create player car IMMEDIATELY
-  const wp=f2w(1,0);
+  // La posición inicial viene del servidor: así el auto que ve el jugador es el
+  // mismo que está en la grilla autoritativa junto a los bots y otros jugadores.
+  const wp=f2w(grid?.position??1,grid?.lane??0);
   cars[myId]=makeCar(myCol);playerCar=cars[myId];
   playerCar.position.set(wp.x,wp.y,wp.z);
   playerCar.rotation.y=wp.rotY;
