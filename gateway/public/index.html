@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1209,18 +1210,9 @@ function onHandoffEvent(ev){
   if(sig===_lastHandoffSig&&now-_lastHandoffAt<2000)return; // aviso repetido (reintento de red)
   _lastHandoffSig=sig;_lastHandoffAt=now;
   g('sl').textContent='SECTOR S'+ev.toSector;
-  if(ev.toSector===1&&ev.fromSector===3){
-    // Tiempo REAL de la vuelta que se acaba de completar (no inventado)
-    if(lapStartTime){
-      lastLapMs=Date.now()-lapStartTime;
-      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
-    }
-    lapStartTime=Date.now();
-    myLap++;g('ln').textContent=myLap;
-    if(myLap>MAX_LAPS){finishRace();return;}
-    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
-  }
-  else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
+  // HANDOFF solo actualiza el sector. La vuelta se confirma con LAP_COMPLETED,
+  // publicado por S3 después de que S1 confirmó recibir el auto.
+  addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
 }
 // Termina la carrera para el jugador: congela los controles y muestra el podio final
 // con la clasificación tal como está en ese momento.
@@ -1314,6 +1306,7 @@ function onRaceStartEvent(ev){
   // servidor ya lo reseteó a la grilla — aparecía absurdamente adelante en la
   // clasificación mientras estaba parado en la línea de salida.
   for(const id in carLaps)delete carLaps[id];
+  myLap=1;g('ln').textContent=myLap;
   if(ev&&typeof ev.circuit==='number')syncCircuitWithServer(ev.circuit);
   if(_isQueued){
     // Nos tocó el turno: el servidor ya nos puso en la grilla de la nueva ronda,
@@ -1338,16 +1331,25 @@ function onRaceStartEvent(ev){
 // CADA VUELTA -- un auto en su 3ra vuelta en posición 20 aparecía detrás de uno en su
 // 1ra vuelta en posición 80, aunque el primero vaya mucho más adelante en la carrera
 // real. Se necesita la vuelta de cada auto para ordenar bien (vuelta*100+posición).
-// El evento HANDOFF ya le llega a TODOS los clientes (no solo al dueño del auto), así
-// que se puede trackear la vuelta de cualquier auto sin tocar el servidor ni Socket.IO.
+// El sector S3 publica LAP_COMPLETED solo después de que S1 confirma el handoff. Esto
+// evita que un reintento de red convierta un HANDOFF repetido en una vuelta extra.
 const carLaps={};
 function trackLap(ev){
-  if(ev.toSector!==1||ev.fromSector!==3)return;
-  carLaps[ev.carId]=(carLaps[ev.carId]||1)+1;
+  if(ev.type!=='LAP_COMPLETED'||!Number.isInteger(ev.lap))return;
+  carLaps[ev.carId]=Math.max(carLaps[ev.carId]||1,ev.lap);
+  if(ev.carId===myId&&ev.lap>myLap){
+    if(lapStartTime){
+      lastLapMs=Date.now()-lapStartTime;
+      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
+    }
+    myLap=ev.lap;g('ln').textContent=myLap;
+    lapStartTime=Date.now();
+    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
+  }
   // La carrera termina cuando CUALQUIERA (bot o jugador) completa las 5 vueltas —
   // como en una carrera real: si el líder toma la bandera a cuadros, se acaba para
   // todos, no solo cuando el jugador termina la suya.
-  if(gameState==='racing'&&carLaps[ev.carId]>MAX_LAPS){
+  if(gameState==='racing'&&ev.raceFinished){
     const winnerName=window.AC?.[ev.carId]?.name||ev.carId;
     finishRace(ev.carId===myId?null:winnerName);
   }
@@ -1359,7 +1361,8 @@ function raceProgress(carId,position){
   return (carLaps[carId]||1)*100+(position||0);
 }
 socket.on('race:event',ev=>{
-  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);trackLap(ev);}
+  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);}
+  if(ev.type==='LAP_COMPLETED')trackLap(ev);
   if(ev.type==='COLLISION')onCollisionEvent(ev);
   if(ev.type==='RACE_START')onRaceStartEvent(ev);
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');

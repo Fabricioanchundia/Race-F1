@@ -31,6 +31,7 @@ const redisPub = new Redis(REDIS_URL);
 // cualquier bot que tenga en su propio Map local al recibir el aviso.
 const redisSub = new Redis(REDIS_URL);
 const cars     = new Map();
+const MAX_LAPS = 5;
 
 redisSub.subscribe('sector:reset-bots', (err) => {
   if (err) console.error(`[S${SECTOR_ID}] Error suscribiendo a sector:reset-bots: ${err.message}`);
@@ -123,7 +124,7 @@ function placeOnGrid(carId, name, color, vectorClock, circuit) {
   }
   const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
   const slot = gridSlot(BOTS.length + humanCount);
-  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,vectorClock,spawnUntil:Date.now()+4000});
+  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,lap:1,vectorClock,spawnUntil:Date.now()+4000});
   console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${slot.lane}, pos ${slot.position})`);
 }
 
@@ -187,7 +188,22 @@ async function updateCarPhysics(carId, car) {
   car.position = Number.parseFloat((car.position + car.speed * .1).toFixed(2));
   if (car.position >= RANGE[SECTOR_ID].max) {
     const next = SECTOR_ID < 3 ? SECTOR_ID+1 : 1;
-    await handoff(carId, car, next);
+    // La vuelta se incrementa exactamente una vez, solo cuando S3 entregó el auto a
+    // S1. Si el destino no responde se revierte el incremento antes de reintentar.
+    const completesLap = SECTOR_ID === 3 && next === 1;
+    const previousLap = Number.isInteger(car.lap) ? car.lap : 1;
+    if (completesLap) car.lap = previousLap + 1;
+    const transferred = await handoff(carId, car, next);
+    if (!transferred) {
+      if (completesLap) car.lap = previousLap;
+      return;
+    }
+    if (completesLap) {
+      await redisPub.publish('race:events', JSON.stringify({
+        type: 'LAP_COMPLETED', carId, lap: car.lap, sector: SECTOR_ID,
+        raceFinished: car.lap > MAX_LAPS, timestamp: Date.now()
+      }));
+    }
     cars.delete(carId);
     return;
   }
@@ -273,23 +289,37 @@ async function checkCollisions() {
   }
 }
 
-// GAME LOOP — cada 100ms: mueve autos, revisa colisiones, publica el estado
-setInterval(async () => {
+// GAME LOOP — no se permiten ticks simultáneos. El setInterval anterior aceptaba
+// reentradas si un handoff HTTP tardaba más de 100 ms: dos ticks podían transferir el
+// mismo auto y después borrarlo dos veces, causando autos quietos o vueltas duplicadas.
+let physicsTickRunning = false;
+async function runPhysicsTick() {
   if (cars.size === 0) return;
   for (const [carId, car] of cars) {
     await updateCarPhysics(carId, car);
   }
   await checkCollisions();
   await redisPub.publish('race:state',JSON.stringify({sectorId:SECTOR_ID,cars:[...cars.entries()].map(([id,c])=>({carId:id,name:c.name,position:c.position,speed:c.speed,color:c.color||'#888',isBot:!!c.isBot,lane:c.lane||0})),timestamp:Date.now()}));
+}
+setInterval(() => {
+  if (physicsTickRunning || cars.size === 0) return;
+  physicsTickRunning = true;
+  runPhysicsTick().catch(err => console.error(`[S${SECTOR_ID}] Error en tick de física: ${err.message}`))
+    .finally(() => { physicsTickRunning = false; });
 }, 100);
 
 
 async function handoff(carId, car, target) {
   try {
-    await axios.post(`${SECTOR_URLS[target]}/car/receive`,{carId,car:{...car,position:RANGE[target].min},fromSector:SECTOR_ID,toSector:target});
+    await axios.post(`${SECTOR_URLS[target]}/car/receive`,{carId,car:{...car,position:RANGE[target].min},fromSector:SECTOR_ID,toSector:target},{timeout:1500});
     await notifyGatewayHandoff(carId, target);
     console.log(`[S${SECTOR_ID}] Handoff ${carId}→S${target}`);
-  } catch(e) { console.error(`[S${SECTOR_ID}] Error handoff: ${e.message}`); car.position=RANGE[SECTOR_ID].max-1; cars.set(carId,car); }
+    return true;
+  } catch(e) {
+    console.error(`[S${SECTOR_ID}] Error handoff: ${e.message}`);
+    car.position=RANGE[SECTOR_ID].max-1;
+    return false;
+  }
 }
 
 // Avisa al gateway que el auto cambió de sector, con 2 reintentos cortos.
@@ -335,6 +365,9 @@ app.post('/car/command', (req,res) => {
   const{carId,action}=req.body; const car=cars.get(carId);
   if(!car) return res.status(404).json({error:'No en este sector'});
   if(car.isBot) return res.json({ok:true});
+  // La salida la autoriza el servidor. Aunque un cliente modificado mande comandos
+  // durante las luces, no puede ganar velocidad ni adelantar a los bots.
+  if (SECTOR_ID === 1 && !raceStarted) return res.status(409).json({error:'La carrera aún no ha comenzado'});
   if(action==='accelerate') car.speed=Math.min(car.speed+0.4,5.0);
   if(action==='brake')      car.speed=Math.max(car.speed-0.55,0.0);
   if(action==='steerLeft')  car.lane=Math.max((car.lane||0)-0.14,-0.88);
