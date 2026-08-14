@@ -6,6 +6,20 @@
 <title>RaceSync F1</title>
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <style>
+:root{
+  /* --- Sistema de diseño "vidrio oscuro premium" — tocá estas variables para ajustar
+     el look de TODOS los paneles del HUD/menús de una sola vez, en vez de buscar cada
+     uno por separado. --- */
+  --glass-bg:rgba(6,4,16,.82);        /* fondo de los paneles (vidrio oscuro) */
+  --glass-bg-strong:rgba(4,2,14,.94); /* variante más opaca (paneles importantes: clasificación, distribuido) */
+  --glass-border:rgba(255,255,255,.09); /* borde sutil de los paneles */
+  --glass-blur:12px;                    /* qué tan borroso el fondo detrás del vidrio */
+  --glass-radius:12px;                  /* radio de esquina estándar */
+  --glass-shadow:0 10px 28px rgba(0,0,0,.45); /* sombra que "levanta" el panel de la pista */
+  --accent-red:#e10600;   /* rojo principal RaceSync */
+  --accent-red-glow:rgba(225,6,0,.5); /* resplandor rojo tipo LED, para bordes/glow */
+  --text-dim:#8a8a8a;     /* texto secundario, tenue */
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;}
 #cv{position:fixed;top:0;left:0;width:100%;height:100%;touch-action:none;}
@@ -118,8 +132,9 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 #bp{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;}
 #pn{font-size:2.8rem;font-weight:900;color:#f39c12;line-height:1;text-shadow:0 0 24px rgba(243,156,18,.7);}
 #ps{font-size:.75rem;color:#f39c12;letter-spacing:.1em;}
-#st{position:absolute;top:56px;right:8px;background:rgba(4,2,14,.92);backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:9px 11px;min-width:180px;}
+#st{position:absolute;top:56px;right:8px;background:var(--glass-bg-strong);backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);padding:9px 11px;min-width:180px;
+  box-shadow:var(--glass-shadow);}
 #stt{font-size:.5rem;color:#868686;letter-spacing:.2em;margin-bottom:6px;}
 .sr{display:flex;align-items:center;gap:6px;padding:3px 5px;border-radius:5px;font-size:.72rem;margin-bottom:2px;}
 .sr.me{background:rgba(225,6,0,.14);border:1px solid rgba(225,6,0,.2);}
@@ -130,9 +145,9 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .dsBtn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;
   border-radius:8px;padding:5px 8px;font-size:.85rem;cursor:pointer;pointer-events:all;margin-left:8px;}
 .dsBtn.on{background:rgba(225,6,0,.25);border-color:#e10600;}
-#distPanel{position:absolute;top:60px;right:8px;background:rgba(4,2,14,.95);backdrop-filter:blur(12px);
-  border:1px solid rgba(225,6,0,.25);border-radius:14px;padding:12px 14px;min-width:190px;
-  box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:all;}
+#distPanel{position:absolute;top:60px;right:8px;background:var(--glass-bg-strong);backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--accent-red-glow);border-radius:14px;padding:12px 14px;min-width:190px;
+  box-shadow:var(--glass-shadow);pointer-events:all;}
 #distTitle{font-size:.62rem;color:#ff4136;letter-spacing:.14em;font-weight:900;margin-bottom:8px;}
 #distSectors{margin-bottom:8px;}
 .distRow{display:flex;justify-content:space-between;gap:10px;font-size:.62rem;color:#8a8a8a;
@@ -147,13 +162,19 @@ body{background:#000;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-se
 .ns-d .nd{background:#e10600;}.ns-l .nd{background:#f39c12;}
 .nb{font-size:.5rem;padding:1px 4px;border-radius:6px;background:#f39c12;color:#000;font-weight:bold;}
 .nb2{background:#e10600;color:#fff;}
-#lg{position:absolute;bottom:80px;left:8px;max-width:210px;}
+#lg{position:absolute;bottom:80px;left:8px;max-width:210px;
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
+  padding:8px 10px;box-shadow:var(--glass-shadow);}
 #el{font-family:monospace;font-size:.58rem;}
 .le{padding:2px 0;}.li{color:#3498db;}.lg2{color:#27ae60;}.lw{color:#e74c3c;}
 #bb{position:absolute;bottom:0;left:0;right:0;height:68px;
   background:linear-gradient(0deg,rgba(0,0,8,.96) 0%,transparent 100%);
   display:flex;align-items:center;justify-content:space-between;padding:0 16px;}
-#spb{text-align:center;min-width:80px;}
+#spb{text-align:center;min-width:80px;padding:6px 14px;
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
+  border-bottom:2px solid var(--accent-red-glow);} /* filo rojo abajo, tipo LED de tablero */
 #spn{font-size:2.5rem;font-weight:900;color:#e10600;line-height:1;text-shadow:0 0 14px rgba(225,6,0,.5);}
 #spu{font-size:.5rem;color:#868686;letter-spacing:.15em;}
 #ra{flex:1;text-align:center;margin:0 12px;}
@@ -1172,7 +1193,7 @@ function syncCircuitWithServer(serverCircuit){
   addLog('La ronda es en '+(CIRCS[serverCircuit]?.name||'otro circuito')+' — ajustando tu pista...','li');
   rebuildCircuit(serverCircuit);
 }
-socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,circuit})=>{
+socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,circuit,grid})=>{
   myId=carId;myVC=vectorClock;carMats[carId]=myCol;
   if(queued){
     _isQueued=true;
@@ -1193,7 +1214,11 @@ socket.on('player:registered',({carId,sectorId,vectorClock,raceStarted,queued,ci
   g('sl').textContent='SECTOR S'+sectorId;
   addLog('Auto '+carId+' listo','lg2');
   // Pre-create player car IMMEDIATELY
-  const wp=f2w(1,0);
+  // La posición inicial viene del servidor: así el auto que ve el jugador es el
+  // mismo que está en la grilla autoritativa junto a los bots y otros jugadores
+  // (antes se usaba un valor fijo (1,0) para todos, y todos parecían arrancar
+  // amontonados en el mismo lugar aunque el servidor los tuviera en carriles distintos).
+  const wp=f2w(grid?.position??1,grid?.lane??0);
   cars[myId]=makeCar(myCol);playerCar=cars[myId];
   playerCar.position.set(wp.x,wp.y,wp.z);
   playerCar.rotation.y=wp.rotY;
@@ -1229,26 +1254,14 @@ if(g('lnMax'))g('lnMax').textContent=MAX_LAPS;
 // se pierde por red, aunque el aviso original sí haya llegado y ya se haya procesado —
 // eso podía sumar la misma vuelta dos veces. Si el mismo cruce de sectores llega de
 // nuevo en menos de 2s, se ignora (una vuelta real no se completa en ese tiempo).
-let _lastHandoffSig=null,_lastHandoffAt=0;
 function onHandoffEvent(ev){
   if(ev.carId!==myId)return;
-  const sig=ev.fromSector+'>'+ev.toSector;
-  const now=Date.now();
-  if(sig===_lastHandoffSig&&now-_lastHandoffAt<2000)return; // aviso repetido (reintento de red)
-  _lastHandoffSig=sig;_lastHandoffAt=now;
   g('sl').textContent='SECTOR S'+ev.toSector;
-  if(ev.toSector===1&&ev.fromSector===3){
-    // Tiempo REAL de la vuelta que se acaba de completar (no inventado)
-    if(lapStartTime){
-      lastLapMs=Date.now()-lapStartTime;
-      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
-    }
-    lapStartTime=Date.now();
-    myLap++;g('ln').textContent=myLap;
-    if(myLap>MAX_LAPS){finishRace();return;}
-    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
-  }
-  else addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
+  // Las vueltas YA NO se cuentan acá con HANDOFF crudo — ver LAP_COMPLETED más abajo,
+  // que el servidor publica de forma explícita y confiable después de confirmar el
+  // cruce de sector, evitando la ambigüedad de si un HANDOFF es una vuelta nueva o
+  // un simple reintento de red.
+  if(!(ev.toSector===1&&ev.fromSector===3))addLog('S'+ev.fromSector+'→S'+ev.toSector,'li');
 }
 // Termina la carrera para el jugador: congela los controles y muestra el podio final
 // con la clasificación tal como está en ese momento.
@@ -1369,13 +1382,27 @@ function onRaceStartEvent(ev){
 // El evento HANDOFF ya le llega a TODOS los clientes (no solo al dueño del auto), así
 // que se puede trackear la vuelta de cualquier auto sin tocar el servidor ni Socket.IO.
 const carLaps={};
+// LAP_COMPLETED es el evento explícito y confiable que publica el servidor después de
+// confirmar el cruce de sector — evita toda ambigüedad de si un HANDOFF crudo es una
+// vuelta nueva o un simple reintento de red. Trae el número de vuelta YA confirmado
+// (ev.lap) y hasta si la carrera terminó (ev.raceFinished), calculado por el servidor.
 function trackLap(ev){
-  if(ev.toSector!==1||ev.fromSector!==3)return;
-  carLaps[ev.carId]=(carLaps[ev.carId]||1)+1;
+  carLaps[ev.carId]=ev.lap;
+  if(ev.carId===myId){
+    // Tiempo REAL de la vuelta que se acaba de completar (no inventado)
+    if(lapStartTime){
+      lastLapMs=Date.now()-lapStartTime;
+      if(bestLapMs===null||lastLapMs<bestLapMs)bestLapMs=lastLapMs;
+    }
+    lapStartTime=Date.now();
+    myLap=ev.lap;g('ln').textContent=myLap;
+    addLog('Vuelta '+myLap+'! · '+fmtTime(lastLapMs),'lg2');
+  }
   // La carrera termina cuando CUALQUIERA (bot o jugador) completa las 5 vueltas —
   // como en una carrera real: si el líder toma la bandera a cuadros, se acaba para
-  // todos, no solo cuando el jugador termina la suya.
-  if(gameState==='racing'&&carLaps[ev.carId]>MAX_LAPS){
+  // todos, no solo cuando el jugador termina la suya. El servidor ya nos dice si
+  // corresponde (ev.raceFinished), no hace falta recalcularlo acá.
+  if(gameState==='racing'&&ev.raceFinished){
     const winnerName=window.AC?.[ev.carId]?.name||ev.carId;
     finishRace(ev.carId===myId?null:winnerName);
   }
@@ -1387,7 +1414,8 @@ function raceProgress(carId,position){
   return (carLaps[carId]||1)*100+(position||0);
 }
 socket.on('race:event',ev=>{
-  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);trackLap(ev);}
+  if(ev.type==='HANDOFF'){onHandoffEvent(ev);updateDistHandoff(ev);}
+  if(ev.type==='LAP_COMPLETED')trackLap(ev);
   if(ev.type==='COLLISION')onCollisionEvent(ev);
   if(ev.type==='RACE_START')onRaceStartEvent(ev);
   if(ev.type==='LEADER_ELECTED')addLog('Líder S'+ev.leader,'li');
