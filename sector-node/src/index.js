@@ -47,7 +47,8 @@ redisSub.on('message', (channel, raw) => {
   if (purged > 0) console.log(`[S${SECTOR_ID}] ${purged} bot(s) fantasma descartados (estaban de tránsito al resetear la ronda)`);
 });
 
-let playerJoined = false;  // ← bots esperan al primer jugador
+let startTimer = null;
+let raceStarting = false;
 
 const bully = new BullyElection(SECTOR_ID, SECTOR_URLS);
 const hb = new HeartbeatMonitor(SECTOR_ID, redis, async (downId) => {
@@ -63,11 +64,14 @@ const hb = new HeartbeatMonitor(SECTOR_ID, redis, async (downId) => {
 // autos — en circuitos compactos eso ya era un tramo visible del trazado, así que los
 // autos arrancaban dispersos lejos de la meta en vez de agrupados detrás, como en un
 // arranque real de F1). Con 3 por fila el total baja a menos de la mitad.
-const LANES = [-0.65, 0, 0.65]; // separación entre carriles: 0.65 y 1.3 de diferencia, ambas > 0.55 (umbral de colisión)
+// Grilla F1: dos autos por fila, en posiciones alternadas y con una distancia que
+// evita que nazcan superpuestos. Tres autos lado a lado se veía como una fila de
+// karts y dejaba al jugador visualmente muy separado de los bots.
+const LANES = [-0.36, 0.36];
 function gridSlot(i){
   const row = Math.floor(i/LANES.length);
   const lane = LANES[i%LANES.length];
-  return { position: Math.max(0, 7 - row*2.3), lane }; // 2.3 > 2.0 (umbral de colisión) entre filas
+  return { position: Math.max(0.8, 8 - row*2.25), lane };
 }
 const BOTS = [
   {id:'bot_hamilton', name:'Hamilton', color:'#00d2be', targetSpd:3.0},
@@ -98,15 +102,30 @@ const LIGHTS_DURATION_MS = 4700;
 // Ahora se separa en dos pasos: se avisa YA (para que todos vean las luces juntos, al
 // mismo tiempo real), pero los bots recién arrancan cuando ese mismo tiempo ya pasó.
 function releaseBots() {
+  if (raceStarted || raceStarting) return;
+  const humans = [...cars.values()].filter(car => !car.isBot).length;
+  if (humans === 0) return;
+  raceStarting = true;
   redisPub.publish('race:events', JSON.stringify({type:'RACE_START',circuit:currentCircuit,timestamp:Date.now()}));
   console.log('[Bots] Luces arrancando para todos...');
   setTimeout(() => {
     raceStarted = true;
+    raceStarting = false;
     for (const [,car] of cars) {
       if (car.isBot) car.ready = true;
     }
     console.log('[Bots] ¡Arrancaron de verdad!');
   }, LIGHTS_DURATION_MS);
+}
+
+// Una sola cuenta atrás por ronda. A diferencia de playerJoined, este estado se limpia
+// siempre y un jugador que recarga puede volver a iniciar una salida correctamente.
+function scheduleRaceStart(delay = 5000) {
+  if (raceStarted || raceStarting || startTimer) return;
+  startTimer = setTimeout(() => {
+    startTimer = null;
+    releaseBots();
+  }, delay);
 }
 
 // BUG ARREGLADO: antes cada jugador elegía su circuito solo del lado del cliente (puro
@@ -124,8 +143,10 @@ function placeOnGrid(carId, name, color, vectorClock, circuit) {
   }
   const humanCount = [...cars.values()].filter(c=>!c.isBot).length;
   const slot = gridSlot(BOTS.length + humanCount);
-  cars.set(carId,{name:name||carId,color:color||'#888',position:RANGE[SECTOR_ID].min+slot.position,speed:0,lane:slot.lane,lap:1,vectorClock,spawnUntil:Date.now()+4000});
+  const position = RANGE[SECTOR_ID].min+slot.position;
+  cars.set(carId,{name:name||carId,color:color||'#888',position,speed:0,lane:slot.lane,lap:1,vectorClock,spawnUntil:Date.now()+4000});
   console.log(`[S${SECTOR_ID}] Piloto ${name} en grilla — PARADO (carril ${slot.lane}, pos ${slot.position})`);
+  return { position, lane: slot.lane };
 }
 
 // Arranca una nueva ronda para todos los que estaban esperando en cola: resetea los
@@ -146,7 +167,7 @@ function startNextWave() {
   const toRelease = waitingQueue; waitingQueue = []; queueSince = null;
   toRelease.forEach(p => placeOnGrid(p.carId, p.name, p.color, p.vectorClock, p.circuit));
   console.log(`[Bots] Nueva ronda: ${toRelease.length} piloto(s) en cola pasan a la grilla (circuito ${currentCircuit})`);
-  setTimeout(releaseBots, 5000);
+  scheduleRaceStart(5000);
 }
 
 // Revisa cada 2s si ya se puede arrancar la próxima ronda para los que están en cola:
@@ -220,6 +241,22 @@ function separateLanes(cA, cB) {
   else { cB.lane=Math.max((cB.lane||0)-0.32,-0.88); cA.lane=Math.min((cA.lane||0)+0.32,0.88); }
 }
 
+// Una colisión debe sentirse como contacto, no solo como una multa de velocidad.
+// Se separan en el eje de avance y se transfiere una parte pequeña del impulso del
+// auto que venía detrás. Los topes impiden que esta respuesta saque un auto del sector.
+function separateCars(cA, cB) {
+  const aBehind = cA.position <= cB.position;
+  const behind = aBehind ? cA : cB;
+  const ahead = aBehind ? cB : cA;
+  const min = RANGE[SECTOR_ID].min + 0.15;
+  const max = RANGE[SECTOR_ID].max - 0.35;
+  const push = Math.min(0.35, Math.max(0.12, behind.speed * 0.07));
+  behind.position = Math.max(min, Number.parseFloat((behind.position - push).toFixed(2)));
+  ahead.position = Math.min(max, Number.parseFloat((ahead.position + push).toFixed(2)));
+  const transferred = Math.min(0.28, behind.speed * 0.08);
+  ahead.speed = Math.min(5, ahead.speed + transferred);
+}
+
 // Baja velocidad y publica el evento — solo una vez cada 700ms por par, no cada 100ms
 async function applyCollisionPenalty(idA, cA, idB, cB, key, now) {
   lastCollision[key] = now;
@@ -272,6 +309,7 @@ async function handlePair(idA, cA, idB, cB, hit, now) {
   if (!isColliding(cA,cB)) return;
   const key = idA<idB ? idA+'|'+idB : idB+'|'+idA;
   separateLanes(cA,cB);
+  separateCars(cA,cB);
   hit.add(idA);hit.add(idB);
   if (!lastCollision[key] || now-lastCollision[key]>700) {
     await applyCollisionPenalty(idA,cA,idB,cB,key,now);
@@ -350,14 +388,14 @@ app.post('/car/register', (req,res) => {
     console.log(`[S${SECTOR_ID}] Piloto ${name} en cola — esperando la próxima ronda (${waitingQueue.length} en cola)`);
     return res.json({ok:true, queued:true, circuit:currentCircuit});
   }
-  placeOnGrid(carId, name, color, vectorClock, circuit);
-  // Primera vez que llega un jugador real → contar 5s y soltar bots
-  if (!playerJoined && SECTOR_ID===1) {
-    playerJoined = true;
-    console.log('[Bots] Jugador detectado, bots arrancan en 5s...');
-    setTimeout(releaseBots, 5000);
+  const grid = placeOnGrid(carId, name, color, vectorClock, circuit);
+  // Cada ronda programa una sola salida. Si el jugador recarga antes del GO, otro
+  // registro vuelve a poder iniciar el temporizador en vez de quedar bloqueado.
+  if (SECTOR_ID===1) {
+    console.log('[Bots] Jugador detectado, salida programada...');
+    scheduleRaceStart(5000);
   }
-  res.json({ok:true, raceStarted, circuit:currentCircuit});
+  res.json({ok:true, raceStarted, circuit:currentCircuit, grid});
 });
 
 app.post('/car/receive', (req,res) => { const{carId,car,fromSector}=req.body; cars.set(carId,car); console.log(`[S${SECTOR_ID}] ${carId} desde S${fromSector}`); res.json({ok:true}); });
@@ -388,5 +426,5 @@ app.post('/car/remove', (req,res) => {
 });
 app.post('/election',    (req,res)=>{res.json({ok:true});setTimeout(()=>bully.startElection(redisPub),100);});
 app.post('/coordinator', (req,res)=>{bully.setLeader(req.body.leader);res.json({ok:true});});
-app.get('/health',       (req,res)=>res.json({status:'ok',sectorId:SECTOR_ID,cars:cars.size,playerJoined}));
+app.get('/health',       (req,res)=>res.json({status:'ok',sectorId:SECTOR_ID,cars:cars.size,raceStarted,raceStarting}));
 app.listen(PORT,()=>{console.log(`[Sector ${SECTOR_ID}] Puerto ${PORT}`);hb.start();});
